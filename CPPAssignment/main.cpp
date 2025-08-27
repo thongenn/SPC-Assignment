@@ -6,6 +6,8 @@ int main() {
     cout << "Test";
     cout << "HEllo";
     cout<<"testttt";
+    cout<<"hi";
+
     return 0;
 
 }
