@@ -1,16 +1,24 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <regex>
 using namespace std;
+
 
 struct User {
     string username;
     string password;
     string phone;
 };
-//hello
 
-// ----------------- User Functions -----------------
+void mainMenu();
+void registerUser();
+void loginUser();
+void userMenu(const string& username);
+void adminMenu();
+bool validatePhone(const string& phone);
+bool validatePassword(const string& password);
+
 void userMenu(const string& username) {
     int choice;
     do {
@@ -22,6 +30,7 @@ void userMenu(const string& username) {
         cout << "5. Logout\n";
         cout << "Enter your choice: ";
         cin >> choice;
+        cin.ignore();
 
         switch (choice) {
             case 1: cout << "Event Registration selected...\n"; break;
@@ -34,42 +43,51 @@ void userMenu(const string& username) {
     } while (choice != 5);
 }
 
-// ----------------- Organizer Functions -----------------
+
 void adminMenu() {
     int choice;
     do {
         cout << "\n===== Organizer Page (Admin) =====\n";
-        cout << "1. View Registered Events\n";
-        cout << "2. Monitor Task Progress\n";
-        cout << "3. Update Logistics\n";
-        cout << "4. Track Payment Status\n";
-        cout << "5. Generate Reports\n";
-        cout << "6. Logout\n";
+        cout << "1. Create venue\n";
+        cout << "2. Create Menu\n";
+        cout << "3. Monitor Task Progress\n";
+        cout << "4. Generate Reports\n";
+        cout << "5. Logout\n";
         cout << "Enter your choice: ";
         cin >> choice;
+        cin.ignore();
 
         switch (choice) {
-            case 1: cout << "Showing all registered events...\n"; break;
-            case 2: cout << "Monitoring tasks...\n"; break;
-            case 3: cout << "Updating logistics...\n"; break;
-            case 4: cout << "Tracking payments...\n"; break;
-            case 5: cout << "Generating reports...\n"; break;
-            case 6: cout << "Logging out...\n"; break;
+            case 1: cout << "Create venue\n"; break;
+            case 2: cout << "Create Menu\n"; break;
+            case 3: cout << "Monitoring\n"; break;
+            case 4: cout << "Generating reports...\n"; break;
+            case 5: cout << "Logging out...\n"; break;
             default: cout << "Invalid choice!\n";
         }
-    } while (choice != 6);
+    } while (choice != 5);
 }
 
-// ----------------- Registration & Login -----------------
 void registerUser() {
     User newUser;
     cout << "\n--- Register New User ---\n";
+
     cout << "Enter username: ";
-    cin >> newUser.username;
-    cout << "Enter password: ";
-    cin >> newUser.password;
-    cout << "Enter phone number: ";
-    cin >> newUser.phone;
+    getline(cin >> ws, newUser.username);
+
+    cout << "Enter password (min 6 chars, at least one number): ";
+    getline(cin >> ws, newUser.password);
+    if (!validatePassword(newUser.password)) {
+        cout << "Weak password! Must be at least 6 chars and contain a number.\n";
+        return;
+    }
+
+    cout << "Enter phone number (10–11 digits): ";
+    getline(cin >> ws, newUser.phone);
+    if (!validatePhone(newUser.phone)) {
+        cout << "Invalid phone number format.\n";
+        return;
+    }
 
     ofstream outFile("users.txt", ios::app);
     if (!outFile) {
@@ -82,25 +100,25 @@ void registerUser() {
     cout << "Registration successful!\n";
 }
 
+// ----------------- Login -----------------
 void loginUser() {
     string username, password;
     cout << "\n--- Login ---\n";
     cout << "Enter username: ";
-    cin >> username;
+    getline(cin >> ws, username);
     cout << "Enter password: ";
-    cin >> password;
+    getline(cin >> ws, password);
 
-    // Organizer/Admin login
+    // Admin login
     if (username == "admin" && password == "admin") {
-        cout << "\nLogin successful! Welcome Organizer.\n";
+        cout << "\nAdmin login successful! Welcome Organizer.\n";
         adminMenu();
         return;
     }
 
-    // Normal customer login
     ifstream inFile("users.txt");
     if (!inFile) {
-        cout << "Error: No users registered yet!\n";
+        cout << "No users registered yet!\n";
         return;
     }
 
@@ -110,21 +128,31 @@ void loginUser() {
     while (inFile >> u.username >> u.password >> u.phone) {
         if (u.username == username && u.password == password) {
             found = true;
-            cout << "\nLogin successful! Welcome " << u.username << ".\n";
+            cout << "\n Login successful! Welcome " << u.username << ".\n";
             userMenu(u.username);
             break;
         }
     }
-
     inFile.close();
 
     if (!found) {
-        cout << "\nError: Invalid username or password!\n";
+        cout << "Invalid username or password!\n";
     }
 }
 
+bool validatePhone(const string& phone) {
+    regex phonePattern("^[0-9]{10,11}$");
+    return regex_match(phone, phonePattern);
+}
+
+bool validatePassword(const string& password) {
+    if (password.length() < 6) return false;
+    regex passPattern("^(?=.*[0-9]).{6,}$");
+    return regex_match(password, passPattern);
+}
+
 // ----------------- Main Menu -----------------
-int main() {
+void mainMenu() {
     int choice;
     do {
         cout << "\n===== Wedding Event Management System =====\n";
@@ -133,14 +161,23 @@ int main() {
         cout << "3. Exit\n";
         cout << "Enter your choice: ";
         cin >> choice;
+        cin.ignore();
 
         switch (choice) {
             case 1: registerUser(); break;
             case 2: loginUser(); break;
-            case 3: cout << "Goodbye!\n"; break;
+            case 3: cout << "👋 Goodbye!\n"; break;
             default: cout << "Invalid choice!\n";
         }
     } while (choice != 3);
+}
 
+// ----------------- Main -----------------
+int main() {
+    cout << "=============================================\n";
+    cout << "     Wedding Event Management System\n";
+    cout << "=============================================\n";
+
+    mainMenu();
     return 0;
 }
