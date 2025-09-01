@@ -35,8 +35,8 @@ struct Venue {
     int hall;
     string location;
     int capacity;
-    bool available[2];  // Morning=0, Afternoon=1
     double price;
+    string timeslot; // "Morning" or "Evening"
 };
 
 const int max_equipment = 10;
@@ -77,7 +77,7 @@ Date getTodayDate();
 Date parseDate(const string& input);
 string dateToString(const Date& d);
 bool isBefore(const Date& a, const Date& b);
-bool hasConflict(int excludeIndex, const Event& e);
+bool hasConflict(const Event& e);
 void saveDataToFile();
 void loadDataFromFile();
 void saveMenuToFile();
@@ -329,14 +329,13 @@ bool isBefore(const Date& a, const Date& b) {
 }
 
 // Conflict Check
-bool hasConflict(int excludeIndex, const Event& e) {
-    for (int i = 0; i < events.size(); i++) {
-        if (i == excludeIndex) continue; // skip self
-        if (events[i].date.year == e.date.year &&
-            events[i].date.month == e.date.month &&
-            events[i].date.day == e.date.day &&
-            events[i].venue.hall == e.venue.hall
-            ) {
+bool hasConflict(const Event& e) {
+    for (const auto& existingEvent : events) {
+        if (existingEvent.date.year == e.date.year &&
+            existingEvent.date.month == e.date.month &&
+            existingEvent.date.day == e.date.day &&
+            existingEvent.venue.hall == e.venue.hall &&
+            existingEvent.venue.timeslot == e.venue.timeslot) {
             return true;
         }
     }
@@ -355,7 +354,7 @@ void saveDataToFile() {
         file << event.customer << "\n";
         file << event.date.year << " " << event.date.month << " " << event.date.day << "\n";
         file << event.venue.hall << " " << event.venue.location << " " << event.venue.capacity << " "
-             << event.venue.available[0] << " " << event.venue.available[1] << " " << event.venue.price << "\n";
+             << event.venue.price << " " << event.venue.timeslot << "\n";
         file << event.theme << "\n";
         file << event.servingStyle << "\n";
         file << event.equipmentcount << "\n";
@@ -401,7 +400,7 @@ void loadDataFromFile() {
         file.ignore();
 
         file >> event.venue.hall >> event.venue.location >> event.venue.capacity 
-             >> event.venue.available[0] >> event.venue.available[1] >> event.venue.price;
+             >> event.venue.price >> event.venue.timeslot;
         file.ignore();
 
         getline(file, event.theme);
@@ -465,7 +464,6 @@ void saveMenuToFile() {
         }
         file << "---\n"; // separator between menus
     }
-
     file.close();
     cout << "Menus saved successfully.\n";
 }
@@ -520,7 +518,6 @@ void saveVenueToFile() {
         file << v.hall << "\n"
              << v.location << "\n"
              << v.capacity << "\n"
-             << v.available[0] << " " << v.available[1] << "\n"
              << v.price << "\n"
              << "---\n";
     }
@@ -549,9 +546,6 @@ void loadVenueFromFile() {
         
         getline(file, line);
         v.capacity = stoi(line);
-        
-        getline(file, line);
-        sscanf(line.c_str(), "%d %d", &v.available[0], &v.available[1]);
         
         getline(file, line);
         v.price = stod(line);
@@ -589,17 +583,13 @@ void registerEvent(const string& username) {
 
     // Venue Selection
     bool validHall = false;
-    int chosenSlot;
+    string chosenSlot;
     while (!validHall) {
-        cout << "\nAvailable Venues and Slots:\n";
+        cout << "\nAvailable Venues:\n";
         for (const auto& v : venues) {
             cout << "Hall " << v.hall << " | Location: " << v.location
                  << " | Capacity: " << v.capacity
-                 << " | Price: RM" << v.price
-                 << " | Slots: ";
-            if (v.available[0]) cout << "Morning (10:00 AM - 15:00 PM) ";
-            if (v.available[1]) cout << "Evening (18:00 PM - 23:00 PM)";
-            cout << endl;
+                 << " | Price: RM" << v.price << "\n";
         }
 
         int chosenHall;
@@ -607,24 +597,38 @@ void registerEvent(const string& username) {
         cin >> chosenHall;
 
         cout << "Choose slot (1=Morning, 2=Evening): ";
-        cin >> chosenSlot;
+        int slotChoice;
+        cin >> slotChoice;
 
-        if (chosenSlot < 1 || chosenSlot > 2) {
+        if (slotChoice < 1 || slotChoice > 2) {
             cout << "Invalid slot selection. Try again.\n";
             continue;
         }
 
-        for (auto& v : venues) {
-            if (v.hall == chosenHall && v.available[chosenSlot - 1]) {
+        chosenSlot = (slotChoice == 1) ? "Morning" : "Evening";
+
+        // Find the selected venue
+        bool hallFound = false;
+        for (const auto& v : venues) {
+            if (v.hall == chosenHall) {
                 e.venue = v;
-                v.available[chosenSlot - 1] = false;  // mark slot as booked
+                e.venue.timeslot = chosenSlot;
+                hallFound = true;
                 validHall = true;
                 break;
             }
         }
 
-        if (!validHall)
-            cout << "Invalid hall or slot already booked. Try again.\n";
+        if (!hallFound) {
+            cout << "Invalid hall number. Try again.\n";
+            continue;
+        }
+
+        // Check for conflicts
+        if (hasConflict(e)) {
+            cout << "Error: This venue and time slot is already booked! Please choose a different hall or time slot.\n";
+            validHall = false;
+        }
     }
     
     // Choose theme
@@ -686,11 +690,10 @@ void registerEvent(const string& username) {
         "Microphone",
         "Speaker System",
         "Lighting System",
-        "Seat",
-        "Decoration Set"
+        "Seat"
     };
 
-    cout << "\nSelect equipment for the event (enter 0 to continue register):\n";
+    cout << "\nSelect equipment for the event (enter 0 to finish):\n";
     int choice;
     e.equipmentcount = 0;
 
@@ -701,33 +704,46 @@ void registerEvent(const string& username) {
         }
         cout << "0. Finish selection\n";
         cout << "Enter your choice: ";
-        cin >> choice;
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+        // Validate input
+        if (!(cin >> choice)) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input! Please enter a number.\n";
+            continue;
+        }
 
         if (choice == 0) break; // stop selection
 
-        if (choice < 1 || choice > availableEquipment.size()) {
+        if (choice < 1 || choice > (int)availableEquipment.size()) {
             cout << "Invalid choice. Please try again.\n";
             continue;
         }
 
         if (e.equipmentcount >= max_equipment) {
             cout << "You have reached the maximum number of equipment (" 
-                 << max_equipment << ").\n";
+                << max_equipment << ").\n";
             break;
         }
 
+        // Store equipment name
         e.equipment[e.equipmentcount].name = availableEquipment[choice - 1];
-        cout << "Enter detail for " << availableEquipment[choice - 1] << ": ";
+
+        // Clear buffer before getline
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+        // Ask for custom needs
+        cout << "Enter detail/needs for " << availableEquipment[choice - 1] << ": ";
         getline(cin, e.equipment[e.equipmentcount].detail);
 
         e.equipmentcount++;
     }
 
-    // check for conflict
-    if (hasConflict(-1, e)) {
-        cout << "Error: This venue and time slot is already booked!\n";
-        return;
+    // Show what user selected
+    cout << "\nYou selected:\n";
+    for (int i = 0; i < e.equipmentcount; i++) {
+        cout << "- " << e.equipment[i].name 
+             << " (" << e.equipment[i].detail << ")\n";
     }
 
     events.push_back(e);
@@ -757,6 +773,7 @@ void retrieveEvents() {
                  << "\nVenue: Hall " << events[j - 1].venue.hall
                  << "\nLocation: " << events[j - 1].venue.location
                  << "\nCapacity: " << events[j - 1].venue.capacity
+                 << "\nTime Slot: " << events[j - 1].venue.timeslot
                  << "\nTheme: " << events[j - 1].theme      
                  << "\nServing Style: " << events[j - 1].servingStyle       
                  << "\nEquipment: \n";
@@ -827,7 +844,7 @@ void createMenu(){
         }
     }
     
-    cout << "Enter price for this menu: RM";
+    cout << "Enter price per table for this menu: RM";
     cin >> m.price;
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
     
@@ -847,7 +864,7 @@ void viewMenus() {
     for (int i = 0; i < menus.size(); i++) {
         cout << "ID: " << menus[i].id << "\n";
         cout << "Cuisine: " << menus[i].cuisine << "\n";
-        cout << "Price: RM" << menus[i].price << "\n";
+        cout << "Price per table: RM" << menus[i].price << " /per table\n";
         cout << "Food Items: ";
         for (int j = 0; j < menus[i].foodItems.size(); j++) {
             cout << menus[i].foodItems[j];
@@ -923,11 +940,8 @@ void createVenue() {
     cout << "Enter hall capacity: ";
     cin >> v.capacity;
 
-    cout << "Enter price for hall rental: ";
+    cout << "Enter price for hall rental: RM";
     cin >> v.price;
-
-    v.available[0] = true;
-    v.available[1] = true;
 
     venues.push_back(v);
     saveVenueToFile();
@@ -936,7 +950,7 @@ void createVenue() {
     cout << "Hall " << v.hall << " | Location: " << v.location 
          << " | Capacity: " << v.capacity 
          << " | Price: RM" << v.price 
-         << " | Status: Available" << "\n";
+         << "\n";
 }
 
 // View all venues
@@ -952,10 +966,7 @@ void viewVenues() {
         cout << "Location: " << venues[i].location << "\n";
         cout << "Capacity: " << venues[i].capacity << "\n";
         cout << "Price: RM" << venues[i].price << "\n";
-        cout << "Available Slots: ";
-        if (venues[i].available[0]) cout << "Morning ";
-        if (venues[i].available[1]) cout << "Evening";
-        cout << "\n\n";
+        cout << "\n";
     }
 }
 
