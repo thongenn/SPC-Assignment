@@ -1,0 +1,33 @@
+test
+2025 9 30
+1 Floor 1 200 500 Morning
+Traditional Chinese
+Plated
+4
+Microphone
+Wireless, x2
+Speaker System
+x4
+Lighting System
+spotlght
+Seat
+120
+1
+Chinese
+2500
+12
+Crab Meat & Shrimp Paste Claw
+Honey Glazed Char Siew (BBQ Pork)
+Crispy Five-Spice Bean Curd Skin Roll
+Scallop & Spinacch Dumpling
+Lobster in Superior Broth
+Cripspy Roasted Duck
+Steamed Fish
+Steam Scallops wth Garlic & Vermicelli
+Braised Shiitake Mushrooms with Seasonal Greens in Oyster Sause
+Yangzhou Fried Rice
+Sweet Red Bean Soup
+"Double Happiness" Dessert Platter
+1
+vegan
+---
