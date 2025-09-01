@@ -24,6 +24,8 @@ void adminMenu();
 bool validatePhone(const string& phone);
 bool validatePassword(const string& password);
 
+//wq
+void userReporting();
 // Event-related structures and functions
 struct Date {
     int day;
@@ -53,7 +55,17 @@ struct Menu {
     double price;
 };
 
+struct Feedback {
+    string feedbackId;
+    string type;    // Complaint / Suggestion
+    int rating;
+    string content;
+    string status;  // Pending / In Progress / Resolved
+    string response;
+};
+
 struct Event {
+    string eventId;
     string customer;
     Date date;
     Venue venue;
@@ -63,13 +75,294 @@ struct Event {
     int equipmentcount;
     Menu menu;
     vector<string> customizations;
+    vector<Feedback> feedbackList;
 };
 
 // Global variables
+string currentUser;
 vector<Event> events;
 vector<Menu> menus;
 vector<Venue> venues;
 int nextMenuId = 1;
+
+string generateFeedbackID() {
+    static int counter = 1;
+    return "FB" + to_string(counter++);
+}
+
+//USER REPORTING
+void viewFeedback() {
+    if (currentUser.empty()) {
+        cout << "Please login first!\n";
+        return;
+    }
+    cout << "\n+==============================================================+\n";
+    cout << "|                    My Feedback & Reply                       |\n";
+    cout << "+==============================================================+\n";
+    bool hasFeedback = false;
+    for (Event &ev : events) {
+        if (ev.customer == currentUser) {
+            cout << "Event ID: " << ev.eventId << " | Theme: " << ev.theme << "\n";
+            if (ev.feedbackList.empty()) {
+                cout << "No feedback yet.\n";
+            } else {
+                hasFeedback = true;
+                for (Feedback &fb : ev.feedbackList) {
+                    cout << "Feedback ID: " << fb.feedbackId << " | Type: " << fb.type<< " | Rating: " << fb.rating<< " | Content: " << fb.content << "\n" << " Status: " << fb.status << "\n";
+                    cout << "Reply from Staff: " << (fb.response.empty() ? "No reply yet." : fb.response) << endl;
+                }
+            }
+            cout << "-------------------------------------\n";
+            }
+        }
+        if (!hasFeedback) {
+            cout << "You have not submitted any feedback yet.\n";
+        }
+
+}
+void deleteFeedback() {
+    if (currentUser.empty()) {
+        cout << "Please login first!\n";
+        return;
+    }
+
+    cout << "\n+==============================================================+\n";
+    cout << "|                       Delete My Feedback                     |\n";
+    cout << "+==============================================================+\n";
+
+    // 显示当前用户所有 feedback
+    bool hasFeedback = false;
+    for (Event &ev : events) {
+        if (ev.customer == currentUser) {
+            for (Feedback &fb : ev.feedbackList) {
+                cout << "Event ID: " << ev.eventId
+                     << " | Feedback ID: " << fb.feedbackId
+                     << " | Content: " << fb.content << endl;
+                hasFeedback = true;
+            }
+        }
+    }
+
+    if (!hasFeedback) {
+        cout << "You have no feedback to delete.\n";
+        return;
+    }
+
+    // 选择 Feedback ID
+    string id;
+    cout << "Enter the Feedback ID to delete (or type '0' to cancel): ";
+    cin >> id;
+
+    if (id == "0") {
+        cout << "Cancelled.\n";
+        return;
+    }
+
+    // 搜索并删除
+    bool deleted = false;
+    for (Event &ev : events) {
+        if (ev.customer == currentUser) {
+            for (auto it = ev.feedbackList.begin(); it != ev.feedbackList.end(); ++it) {
+                if (it->feedbackId == id) {
+                    ev.feedbackList.erase(it);
+                    cout << "Feedback ID " << id << " deleted successfully.\n";
+                    deleted = true;
+                    break;
+                }
+            }
+        }
+        if (deleted) break;
+    }
+
+    if (!deleted) {
+        cout << "Feedback ID not found or not yours.\n";
+    }
+}
+
+//USER MORNITORING
+void submitFeedback() {
+    if (currentUser.empty()) {
+        cout << "Please login first!\n";
+        return;
+    }
+
+    cout << "\n--- Submit Feedback ---\n";
+
+    // 列出该用户的 Event
+    cout << "Your Events:\n";
+    bool found = false;
+    for (Event& ev : events) {
+        if (ev.customer == currentUser) {
+            cout << "Event ID: " << ev.eventId
+                 << " | Theme: " << ev.theme
+                 << " | Venue: " << ev.venue.location << "\n";
+            found = true;
+        }
+    }
+
+    if (!found) {
+        cout << "No events found for your account.\n";
+        return;
+    }
+
+    // 让用户输入 EventID
+    string chosenID;
+    cout << "Enter Event ID to give feedback: ";
+    cin >> chosenID;
+    cin.ignore();
+
+    // 输入 feedback
+    Feedback fb;
+    fb.feedbackId = generateFeedbackID();
+    fb.status = "Pending";
+    fb.rating = 0;
+
+    cout << "Select feedback type:\n";
+    cout << "1. Rating\n";
+    cout << "2. Complaint\n";
+    cout << "3. Suggestion\n";
+    cout << "Choice: ";
+    int typeChoice;
+    cin >> typeChoice;
+    cin.ignore();
+
+    if (typeChoice == 1) {
+        fb.type = "Rating";
+        cout << "Enter rating (1-5): ";
+        cin >> fb.rating;
+        cin.ignore();
+        cout << "Additional comments: ";
+        getline(cin, fb.content);
+    } else if (typeChoice == 2) {
+        fb.type = "Complaint";
+        cout << "Describe complaint: ";
+        getline(cin, fb.content);
+    } else if (typeChoice == 3) {
+        fb.type = "Suggestion";
+        cout << "Enter suggestion: ";
+        getline(cin, fb.content);
+    } else {
+        cout << "Invalid type.\n";
+        return;
+    }
+
+    // 存 feedback
+
+}
+
+
+//STAFF MONITORING
+void manageFeedback() {
+    string searchType, searchStatus;
+
+    cout << "\n+==============================================================+\n";
+    cout << "|                   Manage Feedback (Staff)                    |\n";
+    cout << "+==============================================================+\n";
+    cin.ignore();
+    cout << "Enter feedback TYPE to search (leave blank to skip): ";
+    getline(cin, searchType);
+
+    cout << "Enter feedback STATUS to filter (leave blank to skip): ";
+    getline(cin, searchStatus);
+
+    bool found = false;
+    for (Event &ev : events) {
+        for (Feedback &fb : ev.feedbackList) {
+            bool matchType = searchType.empty() || fb.type.find(searchType) != string::npos;
+            bool matchStatus = searchStatus.empty() || fb.status.find(searchStatus) != string::npos;
+
+            if (matchType && matchStatus) {
+                cout << "\nFeedback ID: " << fb.feedbackId << endl;
+                cout << "Type: " << fb.type << endl;
+                cout << "Content: " << fb.content << endl;
+                cout << "Status: " << fb.status << endl;
+                cout << "Response: " << (fb.response.empty() ? "No response yet" : fb.response) << endl;
+                cout << "-------------------------------------------------\n";
+                found = true;
+            }
+        }
+    }
+
+    if (!found) {
+        cout << "No feedback matches your search criteria.\n";
+        return;
+    }
+
+    string feedbackId;
+    cout << "\nEnter Feedback ID to update (or 0 to cancel): ";
+    getline(cin, feedbackId);
+
+    if (feedbackId == "0") {
+        cout << "Cancelled.\n";
+        return;
+    }
+
+    for (Event &ev : events) {
+        for (Feedback &fb : ev.feedbackList) {
+            if (fb.feedbackId == feedbackId) {
+                cout << "Current Status: " << fb.status << "\n";
+                cout << "Enter new status (Pending / In Progress / Resolved): ";
+                string newStatus;
+                getline(cin, newStatus);
+                if (!newStatus.empty()) fb.status = newStatus;
+
+                cout << "Enter response to customer (leave blank to skip): ";
+                string response;
+                getline(cin, response);
+                if (!response.empty()) fb.response = response;
+
+                cout << "Feedback updated successfully!\n";
+                return;
+            }
+        }
+    }
+
+    cout << "Feedback ID not found.\n";
+}
+
+
+//STAFF REPORTING
+void staffReporting1() {
+    cout << "\n+================= All Feedbacks =================+\n";
+
+    for (Event &ev : events) {
+        cout << "Event ID: " << ev.eventId << " | Customer: " << ev.customer << "\n";
+        if (ev.feedbackList.empty()) {
+            cout << "   No feedback yet.\n";
+        } else {
+            for (auto &fb : ev.feedbackList) {
+                cout << "   Feedback ID: " << fb.feedbackId
+                     << " | Type: " << fb.type
+                     << " | Rating: " << fb.rating
+                     << " | Status: " << fb.status << "\n"
+                     << "   Content: " << fb.content << "\n";
+            }
+        }
+        cout << "---------------------------------------------------\n";
+    }
+}
+void staffReporting2() {
+    cout << "\n+================= Summary =====================+\n";
+
+    //cout << "\n--- All Feedback for Event: " << event.eventName << " ---\n";
+    //filter tradisi
+    for (Event &ev : events) {
+        int complaints = 0, suggestions = 0, resolved = 0;
+        for (Feedback & fb : ev.feedbackList) {
+            if (fb.type == "Complaint") complaints++;
+            else if (fb.type == "Suggestion") suggestions++;
+            if (fb.status == "Resolved") resolved++;
+        }
+
+        cout << "\n--- Summary ---\n";
+        cout << "Total Feedback: " << ev.feedbackList.size() << endl;
+        cout << " | Complaints: " << complaints
+             << " | Suggestions: " << suggestions << endl;
+        cout << "Resolved: " << resolved
+             << " | Pending/In Progress: " << ev.feedbackList.size() - resolved << endl;
+
+    }
+}
 
 // Function declarations
 bool isValidDate(int year, int month, int day);
@@ -261,6 +554,7 @@ void loginUser() {
         if (fileUser == username && filePass == password) {
             found = true;
             cout << "\nLogin successful! Welcome " << fileUser << ".\n";
+            currentUser = fileUser;   // 保存当前用户
             userMenu(fileUser);
             break;
         }
