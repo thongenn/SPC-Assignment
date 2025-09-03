@@ -1,0 +1,555 @@
+Index: CPPAssignment/main.cpp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>#include <iostream>\r\n#include <fstream>\r\n#include <string>\r\n#include <regex>\r\nusing namespace std;\r\n\r\n\r\nstruct User {\r\n    string username;\r\n    string password;\r\n    string phone;\r\n};\r\n\r\nvoid mainMenu();\r\nvoid registerUser();\r\nvoid loginUser();\r\nvoid userMenu(const string& username);\r\nvoid adminMenu();\r\nbool validatePhone(const string& phone);\r\nbool validatePassword(const string& password);\r\n\r\nvoid userMenu(const string& username) {\r\n    int choice;\r\n    do {\r\n        cout << \"\\n===== User Page (\" << username << \") =====\\n\";\r\n        cout << \"1. Register Wedding Event\\n\";\r\n        cout << \"2. Customize Food & Menu Packages\\n\";\r\n        cout << \"3. Make Payment & Checkout\\n\";\r\n        cout << \"4. View Receipt\\n\";\r\n        cout << \"5. Logout\\n\";\r\n        cout << \"Enter your choice: \";\r\n        cin >> choice;\r\n        cin.ignore();\r\n\r\n        switch (choice) {\r\n            case 1: cout << \"Event Registration selected...\\n\"; break;\r\n            case 2: cout << \"Food & Menu customization selected...\\n\"; break;\r\n            case 3: cout << \"Payment & Checkout selected...\\n\"; break;\r\n            case 4: cout << \"Receipt displayed...\\n\"; break;\r\n            case 5: cout << \"Logging out...\\n\"; break;\r\n            default: cout << \"Invalid choice!\\n\";\r\n        }\r\n    } while (choice != 5);\r\n}\r\n\r\n\r\nvoid adminMenu() {\r\n    int choice;\r\n    do {\r\n        cout << \"\\n===== Organizer Page (Admin) =====\\n\";\r\n        cout << \"1. Create venue\\n\";\r\n        cout << \"2. Create Menu\\n\";\r\n        cout << \"3. Monitor Task Progress\\n\";\r\n        cout << \"4. Generate Reports\\n\";\r\n        cout << \"5. Logout\\n\";\r\n        cout << \"Enter your choice: \";\r\n        cin >> choice;\r\n        cin.ignore();\r\n\r\n        switch (choice) {\r\n            case 1: cout << \"Create venue\\n\"; break;\r\n            case 2: cout << \"Create Menu\\n\"; break;\r\n            case 3: cout << \"Monitoring\\n\"; break;\r\n            case 4: cout << \"Generating reports...\\n\"; break;\r\n            case 5: cout << \"Logging out...\\n\"; break;\r\n            default: cout << \"Invalid choice!\\n\";\r\n        }\r\n    } while (choice != 5);\r\n}\r\n\r\nvoid registerUser() {\r\n    User newUser;\r\n    cout << \"\\n--- Register New User ---\\n\";\r\n\r\n    cout << \"Enter username: \";\r\n    getline(cin >> ws, newUser.username);\r\n\r\n    cout << \"Enter password (min 6 chars, at least one number): \";\r\n    getline(cin >> ws, newUser.password);\r\n    if (!validatePassword(newUser.password)) {\r\n        cout << \"Weak password! Must be at least 6 chars and contain a number.\\n\";\r\n        return;\r\n    }\r\n\r\n    cout << \"Enter phone number (10–11 digits): \";\r\n    getline(cin >> ws, newUser.phone);\r\n    if (!validatePhone(newUser.phone)) {\r\n        cout << \"Invalid phone number format.\\n\";\r\n        return;\r\n    }\r\n\r\n    ofstream outFile(\"users.txt\", ios::app);\r\n    if (!outFile) {\r\n        cout << \"Error opening file!\\n\";\r\n        return;\r\n    }\r\n    outFile << newUser.username << \" \" << newUser.password << \" \" << newUser.phone << endl;\r\n    outFile.close();\r\n\r\n    cout << \"Registration successful!\\n\";\r\n}\r\n\r\n// ----------------- Login -----------------\r\nvoid loginUser() {\r\n    string username, password;\r\n    cout << \"\\n--- Login ---\\n\";\r\n    cout << \"Enter username: \";\r\n    getline(cin >> ws, username);\r\n    cout << \"Enter password: \";\r\n    getline(cin >> ws, password);\r\n\r\n    // Admin login\r\n    if (username == \"admin\" && password == \"admin\") {\r\n        cout << \"\\nAdmin login successful! Welcome Organizer.\\n\";\r\n        adminMenu();\r\n        return;\r\n    }\r\n\r\n    ifstream inFile(\"users.txt\");\r\n    if (!inFile) {\r\n        cout << \"No users registered yet!\\n\";\r\n        return;\r\n    }\r\n\r\n    User u;\r\n    bool found = false;\r\n\r\n    while (inFile >> u.username >> u.password >> u.phone) {\r\n        if (u.username == username && u.password == password) {\r\n            found = true;\r\n            cout << \"\\n Login successful! Welcome \" << u.username << \".\\n\";\r\n            userMenu(u.username);\r\n            break;\r\n        }\r\n    }\r\n    inFile.close();\r\n\r\n    if (!found) {\r\n        cout << \"Invalid username or password!\\n\";\r\n    }\r\n}\r\n\r\nbool validatePhone(const string& phone) {\r\n    regex phonePattern(\"^[0-9]{10,11}$\");\r\n    return regex_match(phone, phonePattern);\r\n}\r\n\r\nbool validatePassword(const string& password) {\r\n    if (password.length() < 6) return false;\r\n    regex passPattern(\"^(?=.*[0-9]).{6,}$\");\r\n    return regex_match(password, passPattern);\r\n}\r\n\r\n// ----------------- Main Menu -----------------\r\nvoid mainMenu() {\r\n    int choice;\r\n    do {\r\n        cout << \"\\n===== Wedding Event Management System =====\\n\";\r\n        cout << \"1. Register\\n\";\r\n        cout << \"2. Login\\n\";\r\n        cout << \"3. Exit\\n\";\r\n        cout << \"Enter your choice: \";\r\n        cin >> choice;\r\n        cin.ignore();\r\n\r\n        switch (choice) {\r\n            case 1: registerUser(); break;\r\n            case 2: loginUser(); break;\r\n            case 3: cout << \"\uD83D\uDC4B Goodbye!\\n\"; break;\r\n            default: cout << \"Invalid choice!\\n\";\r\n        }\r\n    } while (choice != 3);\r\n}\r\n\r\n// ----------------- Main -----------------\r\nint main() {\r\n    cout << \"=============================================\\n\";\r\n    cout << \"     Wedding Event Management System\\n\";\r\n    cout << \"=============================================\\n\";\r\n\r\n    mainMenu();\r\n    return 0;\r\n    //test\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/CPPAssignment/main.cpp b/CPPAssignment/main.cpp
+--- a/CPPAssignment/main.cpp	(revision bdea5ffb0c188d4fc158a3d16fd26a4e6b6f30f1)
++++ b/CPPAssignment/main.cpp	(date 1756827519536)
+@@ -1,158 +1,385 @@
+ #include <iostream>
+ #include <fstream>
+ #include <string>
+-#include <regex>
++#include <vector>
++#include <algorithm>
++#include <cctype>
+ using namespace std;
+ 
+-
++// ---------------- Structures ----------------
+ struct User {
+     string username;
+     string password;
+     string phone;
+ };
+ 
++struct Venue {
++    string name;
++    int capacity;
++    double price;
++};
++
++struct Menu {
++    string name;
++    double pricePerPerson;
++};
++
++struct Booking {
++    string username;
++    string venueName;
++    string menuName;
++    int guests;
++};
++
++// ---------------- Function Prototypes ----------------
+ void mainMenu();
+ void registerUser();
+ void loginUser();
+ void userMenu(const string& username);
+ void adminMenu();
+-bool validatePhone(const string& phone);
+-bool validatePassword(const string& password);
++
++// Logistics (Venues)
++void createVenue();
++void viewVenues();
++void updateVenue();
++void deleteVenue();
++
++// Food & Menu
++void createMenu();
++void viewMenus();
++void updateMenu();
++void deleteMenu();
++
++// Registration
++void registerEvent(const string& username);
++void viewBookings(const string& username);
++void cancelBooking(const string& username);
+ 
++// ---------------- Utility ----------------
++bool validatePhone(const string& phone) {
++    return phone.size() == 10 && all_of(phone.begin(), phone.end(), ::isdigit);
++}
++
++// ---------------- Menus ----------------
+ void userMenu(const string& username) {
+     int choice;
+     do {
+         cout << "\n===== User Page (" << username << ") =====\n";
+         cout << "1. Register Wedding Event\n";
+-        cout << "2. Customize Food & Menu Packages\n";
+-        cout << "3. Make Payment & Checkout\n";
+-        cout << "4. View Receipt\n";
+-        cout << "5. Logout\n";
++        cout << "2. View My Bookings\n";
++        cout << "3. Cancel Booking\n";
++        cout << "4. Logout\n";
+         cout << "Enter your choice: ";
+         cin >> choice;
+-        cin.ignore();
+ 
+         switch (choice) {
+-            case 1: cout << "Event Registration selected...\n"; break;
+-            case 2: cout << "Food & Menu customization selected...\n"; break;
+-            case 3: cout << "Payment & Checkout selected...\n"; break;
+-            case 4: cout << "Receipt displayed...\n"; break;
+-            case 5: cout << "Logging out...\n"; break;
++            case 1: registerEvent(username); break;
++            case 2: viewBookings(username); break;
++            case 3: cancelBooking(username); break;
++            case 4: cout << "Logging out...\n"; break;
+             default: cout << "Invalid choice!\n";
+         }
+-    } while (choice != 5);
++    } while (choice != 4);
+ }
+-
+ 
+ void adminMenu() {
+     int choice;
+     do {
+         cout << "\n===== Organizer Page (Admin) =====\n";
+-        cout << "1. Create venue\n";
+-        cout << "2. Create Menu\n";
+-        cout << "3. Monitor Task Progress\n";
+-        cout << "4. Generate Reports\n";
+-        cout << "5. Logout\n";
++        cout << "1. Manage Venues (Logistics)\n";
++        cout << "2. Manage Menus (Food)\n";
++        cout << "3. View All Bookings\n";
++        cout << "4. Logout\n";
+         cout << "Enter your choice: ";
+         cin >> choice;
+-        cin.ignore();
+ 
+         switch (choice) {
+-            case 1: cout << "Create venue\n"; break;
+-            case 2: cout << "Create Menu\n"; break;
+-            case 3: cout << "Monitoring\n"; break;
+-            case 4: cout << "Generating reports...\n"; break;
+-            case 5: cout << "Logging out...\n"; break;
++            case 1: {
++                int c;
++                do {
++                    cout << "\n--- Venue Management ---\n";
++                    cout << "1. Create Venue\n2. View Venues\n3. Update Venue\n4. Delete Venue\n5. Back\n";
++                    cout << "Choice: "; cin >> c;
++                    switch (c) {
++                        case 1: createVenue(); break;
++                        case 2: viewVenues(); break;
++                        case 3: updateVenue(); break;
++                        case 4: deleteVenue(); break;
++                    }
++                } while (c != 5);
++                break;
++            }
++            case 2: {
++                int c;
++                do {
++                    cout << "\n--- Menu Management ---\n";
++                    cout << "1. Create Menu\n2. View Menus\n3. Update Menu\n4. Delete Menu\n5. Back\n";
++                    cout << "Choice: "; cin >> c;
++                    switch (c) {
++                        case 1: createMenu(); break;
++                        case 2: viewMenus(); break;
++                        case 3: updateMenu(); break;
++                        case 4: deleteMenu(); break;
++                    }
++                } while (c != 5);
++                break;
++            }
++            case 3: {
++                ifstream in("bookings.txt");
++                Booking b;
++                cout << "\n--- All Bookings ---\n";
++                while (in >> b.username >> b.venueName >> b.menuName >> b.guests) {
++                    cout << "User: " << b.username
++                         << " | Venue: " << b.venueName
++                         << " | Menu: " << b.menuName
++                         << " | Guests: " << b.guests << endl;
++                }
++                in.close();
++                break;
++            }
++            case 4: cout << "Logging out...\n"; break;
+             default: cout << "Invalid choice!\n";
+         }
+-    } while (choice != 5);
++    } while (choice != 4);
+ }
+ 
++// ---------------- User Registration ----------------
+ void registerUser() {
+     User newUser;
+-    cout << "\n--- Register New User ---\n";
+-
++    cout << "--- Register New User ---\n";
+     cout << "Enter username: ";
+-    getline(cin >> ws, newUser.username);
++    cin >> newUser.username;
++    cout << "Enter password: ";
++    cin >> newUser.password;
+ 
+-    cout << "Enter password (min 6 chars, at least one number): ";
+-    getline(cin >> ws, newUser.password);
+-    if (!validatePassword(newUser.password)) {
+-        cout << "Weak password! Must be at least 6 chars and contain a number.\n";
+-        return;
+-    }
+-
+-    cout << "Enter phone number (10–11 digits): ";
+-    getline(cin >> ws, newUser.phone);
+-    if (!validatePhone(newUser.phone)) {
+-        cout << "Invalid phone number format.\n";
+-        return;
+-    }
++    do {
++        cout << "Enter 10-digit phone number: ";
++        cin >> newUser.phone;
++    } while (!validatePhone(newUser.phone));
+ 
+     ofstream outFile("users.txt", ios::app);
+-    if (!outFile) {
+-        cout << "Error opening file!\n";
+-        return;
+-    }
+     outFile << newUser.username << " " << newUser.password << " " << newUser.phone << endl;
+     outFile.close();
+ 
+     cout << "Registration successful!\n";
+ }
+ 
+-// ----------------- Login -----------------
+ void loginUser() {
+     string username, password;
+     cout << "\n--- Login ---\n";
+-    cout << "Enter username: ";
+-    getline(cin >> ws, username);
+-    cout << "Enter password: ";
+-    getline(cin >> ws, password);
++    cout << "Enter username: "; cin >> username;
++    cout << "Enter password: "; cin >> password;
+ 
+-    // Admin login
+     if (username == "admin" && password == "admin") {
+-        cout << "\nAdmin login successful! Welcome Organizer.\n";
++        cout << "\nLogin successful! Welcome Organizer.\n";
+         adminMenu();
+         return;
+     }
+ 
+     ifstream inFile("users.txt");
+-    if (!inFile) {
+-        cout << "No users registered yet!\n";
+-        return;
+-    }
+-
+     User u;
+     bool found = false;
+ 
+     while (inFile >> u.username >> u.password >> u.phone) {
+         if (u.username == username && u.password == password) {
+             found = true;
+-            cout << "\n Login successful! Welcome " << u.username << ".\n";
++            cout << "\nLogin successful! Welcome " << u.username << ".\n";
+             userMenu(u.username);
+             break;
+         }
+     }
+     inFile.close();
+ 
+-    if (!found) {
+-        cout << "Invalid username or password!\n";
++    if (!found) cout << "\nError: Invalid username or password!\n";
++}
++
++// ---------------- Logistics (Venues) ----------------
++void createVenue() {
++    Venue v;
++    cout << "Enter venue name: "; cin >> v.name;
++    cout << "Enter capacity: "; cin >> v.capacity;
++    cout << "Enter price: "; cin >> v.price;
++
++    ofstream out("venues.txt", ios::app);
++    out << v.name << " " << v.capacity << " " << v.price << endl;
++    out.close();
++    cout << "Venue added successfully!\n";
++}
++
++void viewVenues() {
++    ifstream in("venues.txt");
++    Venue v;
++    cout << "\n--- Venues ---\n";
++    while (in >> v.name >> v.capacity >> v.price) {
++        cout << v.name << " | Capacity: " << v.capacity << " | Price: " << v.price << endl;
++    }
++    in.close();
++}
++
++void updateVenue() {
++    vector<Venue> venues;
++    ifstream in("venues.txt");
++    Venue v;
++    while (in >> v.name >> v.capacity >> v.price) venues.push_back(v);
++    in.close();
++
++    string target;
++    cout << "Enter venue name to update: "; cin >> target;
++    bool found = false;
++
++    for (auto &vn : venues) {
++        if (vn.name == target) {
++            cout << "Enter new capacity: "; cin >> vn.capacity;
++            cout << "Enter new price: "; cin >> vn.price;
++            found = true;
++        }
++    }
++
++    ofstream out("venues.txt");
++    for (auto &vn : venues) out << vn.name << " " << vn.capacity << " " << vn.price << endl;
++    out.close();
++
++    cout << (found ? "Venue updated!\n" : "Venue not found!\n");
++}
++
++void deleteVenue() {
++    vector<Venue> venues;
++    ifstream in("venues.txt");
++    Venue v;
++    while (in >> v.name >> v.capacity >> v.price) venues.push_back(v);
++    in.close();
++
++    string target;
++    cout << "Enter venue name to delete: "; cin >> target;
++
++    ofstream out("venues.txt");
++    for (auto &vn : venues) {
++        if (vn.name != target) out << vn.name << " " << vn.capacity << " " << vn.price << endl;
++    }
++    out.close();
++    cout << "Venue deleted if it existed.\n";
++}
++
++// ---------------- Food & Menu ----------------
++void createMenu() {
++    Menu m;
++    cout << "Enter menu name: "; cin >> m.name;
++    cout << "Enter price per person: "; cin >> m.pricePerPerson;
++
++    ofstream out("menus.txt", ios::app);
++    out << m.name << " " << m.pricePerPerson << endl;
++    out.close();
++    cout << "Menu added successfully!\n";
++}
++
++void viewMenus() {
++    ifstream in("menus.txt");
++    Menu m;
++    cout << "\n--- Menus ---\n";
++    while (in >> m.name >> m.pricePerPerson) {
++        cout << m.name << " | Price/Person: " << m.pricePerPerson << endl;
++    }
++    in.close();
++}
++
++void updateMenu() {
++    vector<Menu> menus;
++    ifstream in("menus.txt");
++    Menu m;
++    while (in >> m.name >> m.pricePerPerson) menus.push_back(m);
++    in.close();
++
++    string target;
++    cout << "Enter menu name to update: "; cin >> target;
++    bool found = false;
++
++    for (auto &mn : menus) {
++        if (mn.name == target) {
++            cout << "Enter new price: "; cin >> mn.pricePerPerson;
++            found = true;
++        }
++    }
++
++    ofstream out("menus.txt");
++    for (auto &mn : menus) out << mn.name << " " << mn.pricePerPerson << endl;
++    out.close();
++
++    cout << (found ? "Menu updated!\n" : "Menu not found!\n");
++}
++
++void deleteMenu() {
++    vector<Menu> menus;
++    ifstream in("menus.txt");
++    Menu m;
++    while (in >> m.name >> m.pricePerPerson) menus.push_back(m);
++    in.close();
++
++    string target;
++    cout << "Enter menu name to delete: "; cin >> target;
++
++    ofstream out("menus.txt");
++    for (auto &mn : menus) {
++        if (mn.name != target) out << mn.name << " " << mn.pricePerPerson << endl;
+     }
++    out.close();
++    cout << "Menu deleted if it existed.\n";
++}
++
++// ---------------- Event Registration ----------------
++void registerEvent(const string& username) {
++    viewVenues();
++    string venueChoice;
++    cout << "Enter venue name: "; cin >> venueChoice;
++
++    viewMenus();
++    string menuChoice;
++    cout << "Enter menu name: "; cin >> menuChoice;
++
++    int guests;
++    cout << "Enter number of guests: "; cin >> guests;
++
++    ofstream out("bookings.txt", ios::app);
++    out << username << " " << venueChoice << " " << menuChoice << " " << guests << endl;
++    out.close();
++    cout << "Event registered successfully!\n";
+ }
+ 
+-bool validatePhone(const string& phone) {
+-    regex phonePattern("^[0-9]{10,11}$");
+-    return regex_match(phone, phonePattern);
++void viewBookings(const string& username) {
++    ifstream in("bookings.txt");
++    Booking b;
++    cout << "\n--- Your Bookings ---\n";
++    while (in >> b.username >> b.venueName >> b.menuName >> b.guests) {
++        if (b.username == username) {
++            cout << "Venue: " << b.venueName
++                 << " | Menu: " << b.menuName
++                 << " | Guests: " << b.guests << endl;
++        }
++    }
++    in.close();
+ }
++
++void cancelBooking(const string& username) {
++    vector<Booking> bookings;
++    ifstream in("bookings.txt");
++    Booking b;
++    while (in >> b.username >> b.venueName >> b.menuName >> b.guests) bookings.push_back(b);
++    in.close();
++
++    string target;
++    cout << "Enter venue name of booking to cancel: "; cin >> target;
+ 
+-bool validatePassword(const string& password) {
+-    if (password.length() < 6) return false;
+-    regex passPattern("^(?=.*[0-9]).{6,}$");
+-    return regex_match(password, passPattern);
++    ofstream out("bookings.txt");
++    for (auto &bk : bookings) {
++        if (!(bk.username == username && bk.venueName == target)) {
++            out << bk.username << " " << bk.venueName << " " << bk.menuName << " " << bk.guests << endl;
++        }
++    }
++    out.close();
++    cout << "Booking cancelled if it existed.\n";
+ }
+ 
+-// ----------------- Main Menu -----------------
+-void mainMenu() {
++// ---------------- Main ----------------
++int main() {
+     int choice;
+     do {
+         cout << "\n===== Wedding Event Management System =====\n";
+@@ -161,24 +388,14 @@
+         cout << "3. Exit\n";
+         cout << "Enter your choice: ";
+         cin >> choice;
+-        cin.ignore();
+ 
+         switch (choice) {
+             case 1: registerUser(); break;
+             case 2: loginUser(); break;
+-            case 3: cout << "👋 Goodbye!\n"; break;
++            case 3: cout << "Goodbye!\n"; break;
+             default: cout << "Invalid choice!\n";
+         }
+     } while (choice != 3);
+-}
+ 
+-// ----------------- Main -----------------
+-int main() {
+-    cout << "=============================================\n";
+-    cout << "     Wedding Event Management System\n";
+-    cout << "=============================================\n";
+-
+-    mainMenu();
+     return 0;
+-    //test
+ }
+Index: users.txt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>\r\nhi thongen12 0166696376\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/users.txt b/users.txt
+--- a/users.txt	(revision bdea5ffb0c188d4fc158a3d16fd26a4e6b6f30f1)
++++ b/users.txt	(date 1756827214119)
+@@ -1,2 +1,3 @@
+ 
+ hi thongen12 0166696376
++hi thongen12 2
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"AutoImportSettings\">\r\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\r\n  </component>\r\n  <component name=\"BackendCodeEditorMiscSettings\">\r\n    <option name=\"/Default/Housekeeping/FeatureSuggestion/FeatureSuggestionManager/DisabledSuggesters/=SwitchToGoToActionSuggester/@EntryIndexedValue\" value=\"true\" type=\"bool\" />\r\n  </component>\r\n  <component name=\"CMakePresetLoader\">{\r\n  &quot;useNewFormat&quot;: true\r\n}</component>\r\n  <component name=\"CMakeProjectFlavorService\">\r\n    <option name=\"flavorId\" value=\"CMakePlainProjectFlavor\" />\r\n  </component>\r\n  <component name=\"CMakeReloadState\">\r\n    <option name=\"reloaded\" value=\"true\" />\r\n  </component>\r\n  <component name=\"CMakeRunConfigurationManager\">\r\n    <generated>\r\n      <config projectName=\"SPC_Assignment\" targetName=\"SPC_Assignment\" />\r\n    </generated>\r\n  </component>\r\n  <component name=\"CMakeSettings\">\r\n    <configurations>\r\n      <configuration PROFILE_NAME=\"Debug\" ENABLED=\"true\" CONFIG_NAME=\"Debug\" />\r\n    </configurations>\r\n  </component>\r\n  <component name=\"ChangeListManager\">\r\n    <list default=\"true\" id=\"03501d65-3a95-407c-bbf8-2e8008c2184d\" name=\"Changes\" comment=\"\" />\r\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\r\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\r\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\r\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\r\n  </component>\r\n  <component name=\"ClangdSettings\">\r\n    <option name=\"formatViaClangd\" value=\"false\" />\r\n  </component>\r\n  <component name=\"ExecutionTargetManager\" SELECTED_TARGET=\"CMakeBuildProfile:Debug\" />\r\n  <component name=\"Git.Settings\">\r\n    <option name=\"RECENT_BRANCH_BY_REPOSITORY\">\r\n      <map>\r\n        <entry key=\"$PROJECT_DIR$\" value=\"main\" />\r\n      </map>\r\n    </option>\r\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\r\n  </component>\r\n  <component name=\"ProjectApplicationVersion\">\r\n    <option name=\"ide\" value=\"CLion\" />\r\n    <option name=\"majorVersion\" value=\"2025\" />\r\n    <option name=\"minorVersion\" value=\"2\" />\r\n    <option name=\"productBranch\" value=\"Classic\" />\r\n  </component>\r\n  <component name=\"ProjectColorInfo\">{\r\n  &quot;associatedIndex&quot;: 4\r\n}</component>\r\n  <component name=\"ProjectId\" id=\"31rciR3N7TREQMdLDBkdRV8HQMd\" />\r\n  <component name=\"ProjectViewState\">\r\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\r\n    <option name=\"showLibraryContents\" value=\"true\" />\r\n  </component>\r\n  <component name=\"PropertiesComponent\">{\r\n  &quot;keyToString&quot;: {\r\n    &quot;C/C++ File.main.cpp.executor&quot;: &quot;Run&quot;,\r\n    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,\r\n    &quot;RunOnceActivity.RadMigrateCodeStyle&quot;: &quot;true&quot;,\r\n    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,\r\n    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,\r\n    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,\r\n    &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,\r\n    &quot;RunOnceActivity.west.config.association.type.startup.service&quot;: &quot;true&quot;,\r\n    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,\r\n    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,\r\n    &quot;git-widget-placeholder&quot;: &quot;TE&quot;,\r\n    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,\r\n    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,\r\n    &quot;settings.editor.selected.configurable&quot;: &quot;org.jetbrains.plugins.github.ui.GithubSettingsConfigurable&quot;,\r\n    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;\r\n  }\r\n}</component>\r\n  <component name=\"RunManager\" selected=\"C/C++ File.main.cpp\">\r\n    <configuration default=\"true\" type=\"CLionExternalRunConfiguration\" factoryName=\"Application\" REDIRECT_INPUT=\"false\" ELEVATE=\"false\" USE_EXTERNAL_CONSOLE=\"false\" EMULATE_TERMINAL=\"false\" PASS_PARENT_ENVS_2=\"true\">\r\n      <method v=\"2\">\r\n        <option name=\"CLION.EXTERNAL.BUILD\" enabled=\"true\" />\r\n      </method>\r\n    </configuration>\r\n    <configuration name=\"SPC_Assignment\" type=\"CMakeRunConfiguration\" factoryName=\"Application\" REDIRECT_INPUT=\"false\" ELEVATE=\"false\" USE_EXTERNAL_CONSOLE=\"false\" EMULATE_TERMINAL=\"false\" PASS_PARENT_ENVS_2=\"true\" PROJECT_NAME=\"SPC_Assignment\" TARGET_NAME=\"SPC_Assignment\" CONFIG_NAME=\"Debug\" RUN_TARGET_PROJECT_NAME=\"SPC_Assignment\" RUN_TARGET_NAME=\"SPC_Assignment\">\r\n      <method v=\"2\">\r\n        <option name=\"com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask\" enabled=\"true\" />\r\n      </method>\r\n    </configuration>\r\n    <configuration name=\"main.cpp\" type=\"CppFileRunConfiguration\" factoryName=\"CppFileRunConfiguration\" temporary=\"true\" REDIRECT_INPUT=\"false\" ELEVATE=\"false\" USE_EXTERNAL_CONSOLE=\"false\" EMULATE_TERMINAL=\"false\" PASS_PARENT_ENVS_2=\"true\" PROJECT_NAME=\"SPC-Assignment\" TARGET_NAME=\"main.cpp\" CONFIG_NAME=\"main.cpp\">\r\n      <option name=\"sourceFile\" value=\"CPPAssignment\\main.cpp\" />\r\n      <method v=\"2\">\r\n        <option name=\"com.jetbrains.cidr.cpp.runfile.CppFileBuildBeforeRunTaskProvider$BasicBuildBeforeRunTask\" enabled=\"true\" />\r\n      </method>\r\n    </configuration>\r\n    <list>\r\n      <item itemvalue=\"C/C++ File.main.cpp\" />\r\n      <item itemvalue=\"CMake Application.SPC_Assignment\" />\r\n    </list>\r\n    <recent_temporary>\r\n      <list>\r\n        <item itemvalue=\"C/C++ File.main.cpp\" />\r\n        <item itemvalue=\"C/C++ File.main.cpp\" />\r\n        <item itemvalue=\"C/C++ File.main.cpp\" />\r\n        <item itemvalue=\"C/C++ File.main.cpp\" />\r\n        <item itemvalue=\"C/C++ File.main.cpp\" />\r\n      </list>\r\n    </recent_temporary>\r\n  </component>\r\n  <component name=\"TaskManager\">\r\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\r\n      <changelist id=\"03501d65-3a95-407c-bbf8-2e8008c2184d\" name=\"Changes\" comment=\"\" />\r\n      <created>1756285758417</created>\r\n      <option name=\"number\" value=\"Default\" />\r\n      <option name=\"presentableId\" value=\"Default\" />\r\n      <updated>1756285758417</updated>\r\n      <workItem from=\"1756285759649\" duration=\"57000\" />\r\n      <workItem from=\"1756285840037\" duration=\"293000\" />\r\n    </task>\r\n    <servers />\r\n  </component>\r\n  <component name=\"TypeScriptGeneratedFilesManager\">\r\n    <option name=\"version\" value=\"3\" />\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+--- a/.idea/workspace.xml	(revision bdea5ffb0c188d4fc158a3d16fd26a4e6b6f30f1)
++++ b/.idea/workspace.xml	(date 1756827483856)
+@@ -26,7 +26,12 @@
+     </configurations>
+   </component>
+   <component name="ChangeListManager">
+-    <list default="true" id="03501d65-3a95-407c-bbf8-2e8008c2184d" name="Changes" comment="" />
++    <list default="true" id="03501d65-3a95-407c-bbf8-2e8008c2184d" name="Changes" comment="">
++      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/CPPAssignment/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/CPPAssignment/main.cpp" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/main.exe" beforeDir="false" afterPath="$PROJECT_DIR$/main.exe" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/users.txt" beforeDir="false" afterPath="$PROJECT_DIR$/users.txt" afterDir="false" />
++    </list>
+     <option name="SHOW_DIALOG" value="false" />
+     <option name="HIGHLIGHT_CONFLICTS" value="true" />
+     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+@@ -44,6 +49,10 @@
+     </option>
+     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+   </component>
++  <component name="HighlightingSettingsPerFile">
++    <setting file="mock://diff.cpp" root0="SKIP_HIGHLIGHTING" />
++    <setting file="mock://diff.cpp" root0="SKIP_HIGHLIGHTING" />
++  </component>
+   <component name="ProjectApplicationVersion">
+     <option name="ide" value="CLion" />
+     <option name="majorVersion" value="2025" />
+@@ -78,11 +87,6 @@
+   }
+ }</component>
+   <component name="RunManager" selected="C/C++ File.main.cpp">
+-    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
+-      <method v="2">
+-        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
+-      </method>
+-    </configuration>
+     <configuration name="SPC_Assignment" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="SPC_Assignment" TARGET_NAME="SPC_Assignment" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="SPC_Assignment" RUN_TARGET_NAME="SPC_Assignment">
+       <method v="2">
+         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />

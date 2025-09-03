@@ -1,0 +1,14 @@
+te
+2025 11 12
+1 pj 100 3000 Morning
+Traditional Chinese
+Plated
+1
+Microphone
+hs
+0
+
+4.94066e-324
+0
+0
+---
