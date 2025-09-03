@@ -8,8 +8,6 @@
 #include <limits>
 using namespace std;
 
-
-
 struct User {
     string username;
     string password;
@@ -205,6 +203,7 @@ void adminMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues
     } while (choice != 6);
 }
 
+//register acc
 void registerUser() {
     User newUser;
     cout << "--- Register New User ---\n";
@@ -936,7 +935,7 @@ void registerEvent(const string& username, vector<Event>& events, const vector<M
             }
         }
 
-        // Equipment detail validation
+        // Equipment detail
         string detail;
         while (true) {
             cout << "Enter detail/needs for " << selectedEquipment << ": ";
@@ -1045,7 +1044,7 @@ void createMenu(vector<Menu>& menus, int& nextMenuID){
     Menu m;
     m.id = nextMenuID++;
     
-    // Cuisine choice validation
+    // Cuisine choice
     int opt;
     while (true) {
         cout << "Select cuisine type:\n1. Chinese\n2. Indian\n3. Malay\n4. Western\n5. Italian\nEnter choice: ";
@@ -1350,8 +1349,7 @@ void mainMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues,
         cout << "1. Register\n";
         cout << "2. Login\n";
         cout << "3. Exit\n";
-        
-        // Main menu choice validation
+
         while (true) {
             cout << "Enter your choice: ";
             if (cin >> choice) {
