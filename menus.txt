@@ -1,12 +1,8 @@
 1
 Chinese
-0
-1
-h
----
-2
-Chinese
-0
-1
-toufu
+250
+3
+fish
+rice
+noodle
 ---
