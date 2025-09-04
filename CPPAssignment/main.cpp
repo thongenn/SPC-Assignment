@@ -42,6 +42,7 @@ struct Menu {
 };
 
 struct Event {
+    int id;
     string customer;
     Date date;
     Venue venue;
@@ -56,11 +57,11 @@ struct Event {
 const int max_equipment = 10;
 
 // Forward declarations
-void mainMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID);
+void mainMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID, int& nextEventID);
 void registerUser();
-void loginUser(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID);
-void userMenu(const string& username, vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID);
-void adminMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID);
+void loginUser(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID, int& nextEventID);
+void userMenu(const string& username, vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID, int& nextEventID);
+void adminMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID, int& nextEventID);
 bool validatePhone(const string& phone);
 bool validatePassword(const string& password);
 
@@ -77,7 +78,7 @@ void saveMenuToFile(const vector<Menu>& menus);
 void loadMenuFromFile(vector<Menu>& menus, int& nextMenuID);
 void saveVenueToFile(const vector<Venue>& venues);
 void loadVenueFromFile(vector<Venue>& venues);
-void registerEvent(const string& username, vector<Event>& events, const vector<Menu>& menus, const vector<Venue>& venues);
+void registerEvent(const string& username, vector<Event>& events, const vector<Menu>& menus, const vector<Venue>& venues, int& nextEventID);
 void retrieveEvents(const vector<Event>& events);
 void createMenu(vector<Menu>& menus, int& nextMenuID);
 void viewMenus(const vector<Menu>& menus);
@@ -85,7 +86,7 @@ void customizeMenu(Event& e, vector<Event>& event, vector<Menu>& menus, int& nex
 void createVenue(vector<Venue>& venues);
 void viewVenues(const vector<Venue>& venues);
 
-void userMenu(const string& username, vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID) {
+void userMenu(const string& username, vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID, int& nextEventID) {
     int choice;
     do {
         cout << "\n===== User Page (" << username << ") =====\n";
@@ -115,7 +116,7 @@ void userMenu(const string& username, vector<Event>& events, vector<Menu>& menus
         switch (choice) {
             case 1: 
                 cout << "Event Registration selected...\n"; 
-                registerEvent(username, events, menus, venues); 
+                registerEvent(username, events, menus, venues, nextEventID); 
                 break;
             case 2: 
                 cout << "Food & Menu customization selected...\n"; 
@@ -147,7 +148,7 @@ void userMenu(const string& username, vector<Event>& events, vector<Menu>& menus
     } while (choice != 5);
 }
 
-void adminMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID) {
+void adminMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID, int& nextEventID) {
     int choice;
     do {
         cout << "\n===== Organizer Page (Admin) =====\n";
@@ -203,7 +204,6 @@ void adminMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues
     } while (choice != 6);
 }
 
-//register acc
 void registerUser() {
     User newUser;
     cout << "--- Register New User ---\n";
@@ -241,7 +241,7 @@ void registerUser() {
 }
 
 // login
-void loginUser(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID) {
+void loginUser(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID, int& nextEventID) {
     string username, password;
     cout << "\n--- Login ---\n";
     cout << "Enter username (enter 0 to go back) : ";
@@ -253,7 +253,7 @@ void loginUser(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues
     // Admin login
     if (username == "admin" && password == "admin") {
         cout << "\nAdmin login successful! Welcome Organizer.\n";
-        adminMenu(events, menus, venues, nextMenuID);
+        adminMenu(events, menus, venues, nextMenuID, nextEventID);
         return;
     }
 
@@ -283,7 +283,7 @@ void loginUser(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues
         if (fileUser == username && filePass == password) {
             found = true;
             cout << "\nLogin successful! Welcome " << fileUser << ".\n";
-            userMenu(fileUser, events, menus, venues, nextMenuID);
+            userMenu(fileUser, events, menus, venues, nextMenuID, nextEventID);
             break;
         }
     }
@@ -389,6 +389,7 @@ void saveDataToFile(const vector<Event>& events) {
     }
 
     for (const auto& event : events) {
+        file << event.id << "\n";
         file << event.customer << "\n";
         file << event.date.year << " " << event.date.month << " " << event.date.day << "\n";
 
@@ -427,7 +428,7 @@ void saveDataToFile(const vector<Event>& events) {
 }
 
 // Load all events from file
-void loadDataFromFile(vector<Event>& events) {
+void loadDataFromFile(vector<Event>& events, int& nextEventID) {
     ifstream file("data.txt");
     if (!file.is_open()) {
         cout << "No existing data file found. Starting fresh.\n";
@@ -441,7 +442,18 @@ void loadDataFromFile(vector<Event>& events) {
         if (line.empty() || line == "---") continue;
 
         Event event;
-        event.customer = line;
+
+        try {
+            event.id = stoi(line);
+        } catch (const invalid_argument&) {
+            cout << "Invalid event ID in file: " << line << endl;
+            continue;
+        }
+
+        if (event.id >= nextEventID) nextEventID = event.id + 1;
+        
+        // Read customer name
+        if (!getline(file, event.customer)) break;
         trim(event.customer);
 
         // Read date
@@ -452,7 +464,7 @@ void loadDataFromFile(vector<Event>& events) {
             continue;
         }
 
-        // Read venue details - each on separate lines
+        // Read venue details
         if (!getline(file, line)) break;
         try {
             event.venue.hall = stoi(line);
@@ -572,9 +584,11 @@ void loadDataFromFile(vector<Event>& events) {
         }
 
         events.push_back(event);
-        
-        // Read the separator line
-        getline(file, line);
+
+        // Read the separator line if it exists
+        if (file.peek() != EOF) {
+            getline(file, line);
+        }
     }
 
     file.close();
@@ -725,8 +739,9 @@ void loadVenueFromFile(vector<Venue>& venues) {
     cout << "Venues loaded successfully. " << venues.size() << " venues available.\n";
 }
 
-void registerEvent(const string& username, vector<Event>& events, const vector<Menu>& menus, const vector<Venue>& venues) {
+void registerEvent(const string& username, vector<Event>& events, const vector<Menu>& menus, const vector<Venue>& venues, int& nextEventID) {
     Event e;
+    e.id = nextEventID++;
     e.customer = username;
 
     Date today = getTodayDate();
@@ -935,7 +950,7 @@ void registerEvent(const string& username, vector<Event>& events, const vector<M
             }
         }
 
-        // Equipment detail
+        // Equipment detail validation
         string detail;
         while (true) {
             cout << "Enter detail/needs for " << selectedEquipment << ": ";
@@ -990,53 +1005,118 @@ void retrieveEvents(const vector<Event>& events) {
         return;
     }
     
-    cout << "\n--- Available Events ---\n";
+    // First display the list of events with IDs
+    cout << "\n------ Event List -------\n";
     for (int i = 0; i < events.size(); i++) {
-        cout << "Event " << i + 1 << "\n";
-        cout << "Customer: " << events[i].customer << "\n";
-        cout << "Date: " << dateToString(events[i].date) << "\n";
-        cout << "Venue: Hall " << events[i].venue.hall 
-             << " (" << events[i].venue.location << ")\n";
-        cout << "Capacity: " << events[i].venue.capacity << "\n";
-        cout << "Time Slot: " << events[i].venue.timeslot << "\n";
-        cout << "Theme: " << events[i].theme << "\n";
-        cout << "Serving Style: " << events[i].servingStyle << "\n";
+        cout << events[i].id << ". " << events[i].customer << " - " 
+             << dateToString(events[i].date) << " - Hall " 
+             << events[i].venue.hall << " (" << events[i].venue.timeslot << ")\n";
+    }
+    
+    // Allow user to select an event ID to view details
+    int selectedID;
+    while (true) {
+        cout << "\nSelect ID to view details (0 to go back): ";
+        if (cin >> selectedID) {
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            
+            if (selectedID == 0) {
+                cout << "Returning to previous menu...\n";
+                return;
+            }
+            
+            // Find the event with the selected ID
+            bool found = false;
+            for (const auto& event : events) {
+                if (event.id == selectedID) {
+                    found = true;
+                    
+                    // Display detailed event information
+                    cout << "\n--- Event Details (ID: " << event.id << ") ---\n";
+                    cout << "Customer: " << event.customer << "\n";
+                    cout << "Date: " << dateToString(event.date) << "\n";
+                    cout << "Venue: Hall " << event.venue.hall 
+                         << " (" << event.venue.location << ")\n";
+                    cout << "Capacity: " << event.venue.capacity << "\n";
+                    cout << "Time Slot: " << event.venue.timeslot << "\n";
+                    cout << "Price: RM" << event.venue.price << "\n";
+                    cout << "Theme: " << event.theme << "\n";
+                    cout << "Serving Style: " << event.servingStyle << "\n";
 
-        cout << "Equipment: \n";
-        if (events[i].equipmentcount == 0) {
-            cout << "None";
+                    cout << "Equipment: \n";
+                    if (event.equipmentcount == 0) {
+                        cout << "  None\n";
+                    } else {
+                        for (int k = 0; k < event.equipmentcount; k++) {
+                            cout << "  - " << event.equipment[k].name 
+                                 << " (" << event.equipment[k].detail << ")\n";
+                        }
+                    }
+
+                    cout << "Menu: ";
+                    if (event.menu.cuisine.empty()) {
+                        cout << "Not customized yet\n";
+                    } else {
+                        cout << "\n  Cuisine: " << event.menu.cuisine
+                             << "\n  Price per table: RM" << event.menu.price
+                             << "\n  Food Items: \n";
+                        for (int j = 0; j < event.menu.foodItems.size(); j++) {
+                            cout << "    - " << event.menu.foodItems[j] << "\n";
+                        }
+                    }
+
+                    if (!event.customizations.empty()) {
+                        cout << "Customizations: \n";
+                        for (int j = 0; j < event.customizations.size(); j++) {
+                            cout << "  - " << event.customizations[j] << "\n";
+                        }
+                    }
+                    
+                    cout << "---------------------------------\n";
+                    break;
+                }
+            }
+            
+            if (!found) {
+                cout << "Invalid ID! Please enter a valid event ID from the list.\n";
+                // Show the list again for reference
+                cout << "\nAvailable Event IDs: ";
+                for (int i = 0; i < events.size(); i++) {
+                    cout << events[i].id;
+                    if (i < events.size() - 1) cout << ", ";
+                }
+                cout << "\n";
+            } else {
+                // After viewing details, ask if user wants to view another event
+                char continueChoice;
+                while (true) {
+                    cout << "View another event? (y/n): ";
+                    cin >> continueChoice;
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    
+                    if (continueChoice == 'n' || continueChoice == 'N') {
+                        return;
+                    } else if (continueChoice == 'y' || continueChoice == 'Y') {
+                        break;
+                    } else {
+                        cout << "Invalid input! Please enter 'y' or 'n'.\n";
+                    }
+                }
+                
+                // Show the list again
+                cout << "\n------ Event List -------\n";
+                for (int i = 0; i < events.size(); i++) {
+                    cout << events[i].id << ". " << events[i].customer << " - " 
+                         << dateToString(events[i].date) << " - Hall " 
+                         << events[i].venue.hall << " (" << events[i].venue.timeslot << ")\n";
+                }
+            }
+            
         } else {
-            for (int k = 0; k < events[i].equipmentcount; k++) {
-                cout << events[i].equipment[k].name 
-                     << " (" << events[i].equipment[k].detail << ")";
-                if (k < events[i].equipmentcount - 1) cout << "\n";
-            }
+            cout << "Invalid input! Please enter a number.\n";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
         }
-        cout << "\n";
-
-        cout << "Menu: ";
-        if (events[i].menu.cuisine.empty()) {
-            cout << "Not customized yet\n";
-        } else {
-            cout << "\n  Cuisine: " << events[i].menu.cuisine
-                 << "\n  Food Items: \n  ";
-            for (int j = 0; j < events[i].menu.foodItems.size(); j++) {
-                cout << events[i].menu.foodItems[j];
-                if (j < events[i].menu.foodItems.size() - 1) cout << "\n  ";
-            }
-            cout << "\n";
-        }
-
-        if (!events[i].customizations.empty()) {
-            cout << "Customizations: ";
-            for (int j = 0; j < events[i].customizations.size(); j++) {
-                cout << events[i].customizations[j];
-                if (j < events[i].customizations.size() - 1) cout << ", ";
-            }
-            cout << "\n";
-        }
-
-        cout << "\n";  // spacing between events
     }
 }
 
@@ -1044,7 +1124,7 @@ void createMenu(vector<Menu>& menus, int& nextMenuID){
     Menu m;
     m.id = nextMenuID++;
     
-    // Cuisine choice
+    // Cuisine choice validation
     int opt;
     while (true) {
         cout << "Select cuisine type:\n1. Chinese\n2. Indian\n3. Malay\n4. Western\n5. Italian\nEnter choice: ";
@@ -1342,14 +1422,15 @@ void viewVenues(const vector<Venue>& venues) {
     }
 }
 
-void mainMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID) {    
+void mainMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID, int& nextEventID) {    
     int choice;
     do {
         cout << "\n===== Wedding Event Management System =====\n";
         cout << "1. Register\n";
         cout << "2. Login\n";
         cout << "3. Exit\n";
-
+        
+        // Main menu choice validation
         while (true) {
             cout << "Enter your choice: ";
             if (cin >> choice) {
@@ -1368,7 +1449,7 @@ void mainMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues,
 
         switch (choice) {
             case 1: registerUser(); break;
-            case 2: loginUser(events, menus, venues, nextMenuID); break;
+            case 2: loginUser(events, menus, venues, nextMenuID, nextEventID); break;
             case 3: 
                 cout << "👋 Goodbye!\n"; 
                 saveDataToFile(events);
@@ -1383,11 +1464,12 @@ int main() {
     vector<Event> events;
     vector<Menu> menus;
     vector<Venue> venues;
+    int nextEventID = 1;
     int nextMenuID = 1;
 
     loadVenueFromFile(venues);
     loadMenuFromFile(menus, nextMenuID);
-    loadDataFromFile(events);
+    loadDataFromFile(events, nextEventID);
 
     system("CLS");
     
@@ -1395,6 +1477,6 @@ int main() {
     cout << "     Wedding Event Management System\n";
     cout << "=============================================\n";
 
-    mainMenu(events, menus, venues, nextMenuID);
+    mainMenu(events, menus, venues, nextMenuID, nextEventID);
     return 0;
 }
