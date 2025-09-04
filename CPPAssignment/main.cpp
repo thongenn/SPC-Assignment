@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 #include <string>
 #include <limits>
@@ -26,6 +27,13 @@ bool validatePassword(const string& password);
 
 //wq
 void userReporting();
+void submitFeedback();
+void deleteFeedback();
+void viewFeedback();
+void saveFeedback();
+void loadFeedback();
+
+
 // Event-related structures and functions
 struct Date {
     int day;
@@ -79,52 +87,74 @@ struct Event {
 };
 
 // Global variables
-string currentUser;
-vector<Event> events;
-vector<Menu> menus;
+string currentUser;vector<Menu> menus;
 vector<Venue> venues;
 int nextMenuId = 1;
 
-string generateFeedbackID() {
-    static int counter = 1;
-    return "FB" + to_string(counter++);
-}
 
 //USER REPORTING
-void viewFeedback() {
-    if (currentUser.empty()) {
-        cout << "Please login first!\n";
-        return;
-    }
+void viewFeedback(const string& username, const vector<Event>& events) {
+
     cout << "\n+==============================================================+\n";
     cout << "|                    My Feedback & Reply                       |\n";
     cout << "+==============================================================+\n";
-    bool hasFeedback = false;
-    for (Event &ev : events) {
-        if (ev.customer == currentUser) {
+    bool foundEvent = false;   // 用户有没有 event
+    bool foundFeedback = false; // 用户有没有 feedback
+    for (const Event &ev : events) {
+        if (ev.customer == username) {
+            foundEvent = true;
             cout << "Event ID: " << ev.eventId << " | Theme: " << ev.theme << "\n";
             if (ev.feedbackList.empty()) {
                 cout << "No feedback yet.\n";
             } else {
-                hasFeedback = true;
-                for (Feedback &fb : ev.feedbackList) {
-                    cout << "Feedback ID: " << fb.feedbackId << " | Type: " << fb.type<< " | Rating: " << fb.rating<< " | Content: " << fb.content << "\n" << " Status: " << fb.status << "\n";
-                    cout << "Reply from Staff: " << (fb.response.empty() ? "No reply yet." : fb.response) << endl;
+                foundFeedback = true;
+                for (const Feedback &fb : ev.feedbackList) {
+                    if (fb.status != "Deleted") {
+                        cout << "Feedback ID: " << fb.feedbackId << " | Type: " << fb.type<< " | Rating: " << fb.rating<< " | Content: " << fb.content << "\n" << " Status: " << fb.status << "\n";
+                        cout << "Reply from Staff: " << (fb.response.empty() ? "No reply yet." : fb.response) << endl;
+                        cout << "-------------------------------------\n";
+                    }
                 }
             }
-            cout << "-------------------------------------\n";
-            }
         }
-        if (!hasFeedback) {
-            cout << "You have not submitted any feedback yet.\n";
-        }
+    }
+    if (!foundEvent) {
+        cout << "You have no registered events.\n";
+    } else if (!foundFeedback) {
+        cout << "You have not submitted any feedback yet.\n";
+    }
 
 }
-void deleteFeedback() {
-    if (currentUser.empty()) {
-        cout << "Please login first!\n";
-        return;
-    }
+void feedbackMenu(const string& username, vector<Event>& events) {
+    int choice;
+    do {
+        cout << "\n+==============================================================+\n";
+        cout << "|                    Feedback Management                       |\n";
+        cout << "+==============================================================+\n";
+        cout << "1. Submit Feedback\n";
+        cout << "2. View My Feedback & Reply\n";
+        cout << "3. Back to Main Menu\n";
+        cout << "Enter your choice: ";
+        cin >> choice;
+        cin.ignore();
+        switch (choice) {
+            case 1:
+                submitFeedback();
+                saveFeedback();
+                break;
+            case 2:
+                viewFeedback(username, events);
+                break;
+            case 3:
+                return;
+            default:
+                cout << "Invalid choice. Try again.\n";
+        }
+
+    } while (choice != 3);
+
+}
+void deleteFeedback(const string& username) {
 
     cout << "\n+==============================================================+\n";
     cout << "|                       Delete My Feedback                     |\n";
@@ -133,11 +163,14 @@ void deleteFeedback() {
     // 显示当前用户所有 feedback
     bool hasFeedback = false;
     for (Event &ev : events) {
-        if (ev.customer == currentUser) {
+        if (ev.customer == username) {
             for (Feedback &fb : ev.feedbackList) {
-                cout << "Event ID: " << ev.eventId
+                if (fb.status != "Deleted") {
+                    cout << "Event ID: " << ev.eventId
                      << " | Feedback ID: " << fb.feedbackId
                      << " | Content: " << fb.content << endl;
+                    cout << "-------------------------------------\n";
+                }
                 hasFeedback = true;
             }
         }
@@ -161,24 +194,88 @@ void deleteFeedback() {
     // 搜索并删除
     bool deleted = false;
     for (Event &ev : events) {
-        if (ev.customer == currentUser) {
-            for (auto it = ev.feedbackList.begin(); it != ev.feedbackList.end(); ++it) {
-                if (it->feedbackId == id) {
-                    ev.feedbackList.erase(it);
-                    cout << "Feedback ID " << id << " deleted successfully.\n";
-                    deleted = true;
-                    break;
-                }
+        for (Feedback &fb : ev.feedbackList) {
+            if (ev.customer == username && fb.feedbackId == id) {
+                fb.status = "Deleted";
+                cout << "Feedback ID " << id << " deleted successfully.\n";
+                deleted = true;
+                break;
             }
         }
-        if (deleted) break;
     }
-
     if (!deleted) {
         cout << "Feedback ID not found or not yours.\n";
     }
 }
+void loadFeedbacks(vector<Event>& events) {
+    ifstream inFile("feedbacks.txt");
+    if (!inFile) {
+        cout << "No feedbacks file found. Starting fresh.\n";
+        return;
+    }
 
+    string line;
+    while (getline(inFile, line)) {
+        if (line.empty()) continue;
+
+        stringstream ss(line);
+        string eventId, feedbackId, type, ratingStr, content, status, response;
+
+        getline(ss, eventId, '|');
+        getline(ss, feedbackId, '|');
+        getline(ss, type, '|');
+        getline(ss, ratingStr, '|');
+        getline(ss, content, '|');
+        getline(ss, status, '|');
+        getline(ss, response, '|');
+
+        Feedback fb;
+        fb.feedbackId = feedbackId;
+        fb.type = type;
+        fb.rating = stoi(ratingStr);
+        fb.content = content;
+        fb.status = status;
+        fb.response = response;
+
+        // 找到对应的 event，把 feedback 放进去
+        bool found = false;
+        for (Event &ev : events) {
+            if (ev.eventId == eventId) {
+                ev.feedbackList.push_back(fb);
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            cout << "[Warning] Event ID " << eventId
+                 << " not found for feedback " << feedbackId << endl;
+        }
+    }
+
+    inFile.close();
+}
+void saveFeedbacks(const vector<Event>& events) {
+    ofstream fout("feedbacks.txt");
+    if (!fout) {
+        cout << "Error saving feedbacks!\n";
+        return;
+    }
+
+    for (const Event& ev : events) {
+        for (const Feedback& fb : ev.feedbackList) {
+            fout << ev.eventId << "|"
+                    << fb.feedbackId << "|"
+                    << fb.type << "|"
+                    << fb.rating << "|"
+                    << fb.content << "|"
+                    << fb.status << "|"
+                    << fb.response << "\n";
+        }
+    }
+
+    fout.close();
+}
 //USER MORNITORING
 void submitFeedback() {
     if (currentUser.empty()) {
@@ -188,7 +285,6 @@ void submitFeedback() {
 
     cout << "\n--- Submit Feedback ---\n";
 
-    // 列出该用户的 Event
     cout << "Your Events:\n";
     bool found = false;
     for (Event& ev : events) {
@@ -212,8 +308,12 @@ void submitFeedback() {
     cin.ignore();
 
     // 输入 feedback
+    Event ev;
     Feedback fb;
-    fb.feedbackId = generateFeedbackID();
+    int nextId = ev.feedbackList.size() + 1;
+    stringstream ss;
+    ss << "FB" << setw(5) << setfill('0') << nextId;
+    fb.feedbackId = ss.str();
     fb.status = "Pending";
     fb.rating = 0;
 
@@ -245,8 +345,6 @@ void submitFeedback() {
         cout << "Invalid type.\n";
         return;
     }
-
-    // 存 feedback
 
 }
 
@@ -1297,9 +1395,10 @@ int main() {
     loadVenueFromFile();
     loadMenuFromFile();
     loadDataFromFile();
+    loadFeedbacks(events);
 
     cout << "=============================================\n";
-    cout << "     Wedding Event Management System\n";
+    cout << "      Wedding Event Management System\n";
     cout << "=============================================\n";
 
     mainMenu();
