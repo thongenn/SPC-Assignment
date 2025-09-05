@@ -1,1 +1,2 @@
-1;Chinese;350;fidh;ric;haha
+1;Chinese;200;fish;rice
+2;Western;450;steak;salad;fish & chips
