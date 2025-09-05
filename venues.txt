@@ -1,1 +1,1 @@
-garden;taman botanica;1000;10000;Both
+2001;garden;taman botanica;1000;15000;Both

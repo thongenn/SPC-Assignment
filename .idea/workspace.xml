@@ -31,7 +31,7 @@
       <change beforePath="$PROJECT_DIR$/CPPAssignment/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/CPPAssignment/main.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/data.txt" beforeDir="false" afterPath="$PROJECT_DIR$/data.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.exe" beforeDir="false" afterPath="$PROJECT_DIR$/main.exe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/users.txt" beforeDir="false" afterPath="$PROJECT_DIR$/users.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/menus.txt" beforeDir="false" afterPath="$PROJECT_DIR$/menus.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/venues.txt" beforeDir="false" afterPath="$PROJECT_DIR$/venues.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -94,6 +94,11 @@
 }</component>
   <component name="RunManager" selected="C/C++ File.main.cpp">
     <configuration name="SPC_Assignment" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="SPC_Assignment" TARGET_NAME="SPC_Assignment" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="SPC_Assignment" RUN_TARGET_NAME="SPC_Assignment">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
