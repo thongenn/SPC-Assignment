@@ -1,8 +1,1 @@
-1
-Chinese
-250
-3
-fish
-rice
-noodle
----
+1;Chinese;200;fish
