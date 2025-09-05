@@ -22,7 +22,7 @@ struct Date {
 };
 
 struct Venue {
-    int hall;
+    string type; //venue type(eg,garden,beach)
     string location;
     int capacity;
     double price;
@@ -356,7 +356,7 @@ bool hasConflict(const Event& e, const vector<Event>& events) {
         if (existingEvent.date.year == e.date.year &&
             existingEvent.date.month == e.date.month &&
             existingEvent.date.day == e.date.day &&
-            existingEvent.venue.hall == e.venue.hall &&
+            existingEvent.venue.type == e.venue.type &&
             existingEvent.venue.timeslot == e.venue.timeslot) {
             return true;
         }
@@ -392,7 +392,7 @@ void saveDataToFile(const vector<Event>& events) {
         file << e.id << ";"
              << e.customer << ";"
              << dateToString(e.date) << ";"
-             << e.venue.hall << ";"
+             << e.venue.type << ";"
              << e.venue.location << ";"
              << e.venue.capacity << ";"
              << e.venue.price << ";"
@@ -467,7 +467,7 @@ void loadDataFromFile(vector<Event>& events) {
         e.id = stoi(tokens[index++]);
         e.customer = tokens[index++];
         e.date = parseDate(tokens[index++]);
-        e.venue.hall = stoi(tokens[index++]);
+        e.venue.type = tokens[index++];
         e.venue.location = tokens[index++];
         e.venue.capacity = stoi(tokens[index++]);
         e.venue.price = stod(tokens[index++]);
@@ -618,7 +618,7 @@ void saveVenueToFile(const vector<Venue>& venues) {
     }
 
     for (const auto& v : venues) {
-        file << v.hall << ";"
+        file << v.type << ";"
              << v.location << ";"
              << v.capacity << ";"
              << v.price << ";"
@@ -633,61 +633,40 @@ void saveVenueToFile(const vector<Venue>& venues) {
 void loadVenueFromFile(vector<Venue>& venues) {
     ifstream file("venues.txt");
     if (!file.is_open()) {
-        cout << "No existing venues file found. Starting fresh.\n";
+        cout << "No existing venues file found.\n";
         return;
     }
 
     venues.clear();
     string line;
-
     while (getline(file, line)) {
-        trim(line);
         if (line.empty()) continue;
 
-        vector<string> tokens;
-        string token;
         stringstream ss(line);
-
-        while (getline(ss, token, ';')) {
-            tokens.push_back(token);
-        }
-
-        if (tokens.size() < 5) {
-            cout << "Invalid venue format: " << line << endl;
-            continue;
-        }
-
         Venue v;
+        string capacityStr, priceStr;
+
+        if (!getline(ss, v.type, ';')) continue;
+        if (!getline(ss, v.location, ';')) continue;
+        if (!getline(ss, capacityStr, ';')) continue;
+        if (!getline(ss, priceStr, ';')) continue;
+        if (!getline(ss, v.timeslot, ';')) continue;
+
         try {
-            v.hall = stoi(tokens[0]);
+            v.capacity = stoi(capacityStr);
+            v.price = stod(priceStr);
         } catch (...) {
-            cout << "Invalid hall number in line: " << line << endl;
+            cout << "Error: invalid number in venue line -> " << line << endl;
             continue;
         }
 
-        v.location = tokens[1];
-
-        try {
-            v.capacity = stoi(tokens[2]);
-        } catch (...) {
-            cout << "Invalid capacity for hall " << v.hall << endl;
-            continue;
-        }
-
-        try {
-            v.price = stod(tokens[3]);
-        } catch (...) {
-            cout << "Invalid price for hall " << v.hall << endl;
-            continue;
-        }
-
-        v.timeslot = tokens[4];
         venues.push_back(v);
     }
 
     file.close();
     cout << "Venues loaded successfully. " << venues.size() << " venues available.\n";
 }
+
 
 
 void registerEvent(const string& username, vector<Event>& events, const vector<Menu>& menus, const vector<Venue>& venues,int& nextEventID) {
@@ -726,23 +705,29 @@ void registerEvent(const string& username, vector<Event>& events, const vector<M
     }
 
     // Venue Selection
-    bool validHall = false;
+    // Venue Selection
+    bool validVenue = false;
     string chosenSlot;
 
-    while (!validHall) {
+    while (!validVenue) {
         cout << "\nAvailable Venues:\n";
-        for (const auto& v : venues) {
-            cout << "Hall " << v.hall << " | Location: " << v.location
-                 << " | Capacity: " << v.capacity
-                 << " | Price: RM" << v.price << "\n";
+        for (int i = 0; i < venues.size(); i++) {
+            cout << i + 1 << ". " << venues[i].type
+                 << " | Location: " << venues[i].location
+                 << " | Capacity: " << venues[i].capacity
+                 << " | Price: RM" << venues[i].price << "\n";
         }
 
-        int chosenHall;
+        int choice;
         while (true) {
-            cout << "Enter hall number: ";
-            if (cin >> chosenHall) {
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                break;
+            cout << "Select a venue (1-" << venues.size() << "): ";
+            if (cin >> choice) {
+                if (choice >= 1 && choice <= venues.size()) {
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    break;
+                } else {
+                    cout << "Invalid choice! Please enter a number between 1-" << venues.size() << ".\n";
+                }
             } else {
                 cout << "Invalid input! Please enter a number.\n";
                 cin.clear();
@@ -750,26 +735,14 @@ void registerEvent(const string& username, vector<Event>& events, const vector<M
             }
         }
 
-        bool hallFound = false;
-        for (const auto& v : venues) {
-            if (v.hall == chosenHall) {
-                e.venue = v;
-                hallFound = true;
-                break;
-            }
-        }
+        e.venue = venues[choice - 1];
 
-        if (!hallFound) {
-            cout << "Invalid hall number. Try again.\n";
-            continue; // go back to hall selection
-        }
-
-        // Now ask for slot only if hall is valid
+        // Now ask for slot
         int slotChoice;
         while (true) {
-            cout << "Choose slot (1=Morning (10:00 - 14:00) , 2=Evening (18:00 - 22:00): ";
+            cout << "Choose slot (1=Morning (10:00 - 14:00), 2=Evening (18:00 - 22:00): ";
             if (cin >> slotChoice) {
-                if (slotChoice >= 1 && slotChoice <= 2) {
+                if (slotChoice == 1 || slotChoice == 2) {
                     cin.ignore(numeric_limits<streamsize>::max(), '\n');
                     break;
                 } else {
@@ -787,11 +760,11 @@ void registerEvent(const string& username, vector<Event>& events, const vector<M
 
         // Check for conflicts
         if (hasConflict(e, events)) {
-            cout << "Error: This venue and time slot is already booked! "
-                 << "Please choose a different hall or time slot.\n";
-            validHall = false;
+            cout << "Error: This venue and time slot is already booked!\n"
+                 << "Please choose a different venue or time slot.\n";
+            validVenue = false;
         } else {
-            validHall = true;
+            validVenue = true;
         }
     }
 
@@ -975,8 +948,8 @@ void retrieveEvents(const vector<Event>& events) {
         cout << "Event id : " << events[i].id << "\n";
         cout << "Customer: " << events[i].customer << "\n";
         cout << "Date: " << dateToString(events[i].date) << "\n";
-        cout << "Venue: Hall " << events[i].venue.hall
-             << " (" << events[i].venue.location << ")\n";
+        cout << "Venue: " << events[i].venue.type << "\n";
+        cout << "Location : " << events[i].venue.location << "\n";
         cout << "Capacity: " << events[i].venue.capacity << "\n";
         cout << "Time Slot: " << events[i].venue.timeslot << "\n";
         cout << "Theme: " << events[i].theme << "\n";
@@ -1232,39 +1205,13 @@ void createVenue(vector<Venue>& venues) {
     Venue v;
     cout << "\n=== Create Venue ===\n";
 
-    // Hall number validation + duplicate check
     while (true) {
-        cout << "Enter hall number (Enter 0 to cancel) : ";
-        if (cin >> v.hall) {
-            if (v.hall == 0) {
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                return;
-            }
-
-            if (v.hall > 0) {
-                // Check duplicate hall number
-                bool exists = false;
-                for (const auto& existing : venues) {
-                    if (existing.hall == v.hall) {
-                        exists = true;
-                        break;
-                    }
-                }
-
-                if (exists) {
-                    cout << "Hall number already exists! Please try again.\n";
-                } else {
-                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                    break; // valid and unique hall number
-                }
-            } else {
-                cout << "Hall number must be positive! Please try again.\n";
-            }
-        } else {
-            cout << "Invalid input! Please enter a number.\n";
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-        }
+        cout << "Enter venue type (Enter 0 to cancel) : ";
+        getline(cin, v.type);
+        trim(v.type);
+        if (v.type == "0") return;
+        if (!v.type.empty()) break;
+        cout << "Venue type cannot be empty! Please try again.\n";
     }
 
     // Location validation
@@ -1278,7 +1225,7 @@ void createVenue(vector<Venue>& venues) {
 
     // Capacity validation (100–1000)
     while (true) {
-        cout << "Enter hall capacity : ";
+        cout << "Enter venue capacity : ";
         if (cin >> v.capacity) {
             if (v.capacity >= 100) {
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
@@ -1295,7 +1242,7 @@ void createVenue(vector<Venue>& venues) {
 
     // Price validation
     while (true) {
-        cout << "Enter price for hall rental: RM";
+        cout << "Enter price for venue rental: RM";
         if (cin >> v.price) {
             if (v.price >= 1000) {
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
@@ -1328,7 +1275,7 @@ void createVenue(vector<Venue>& venues) {
         venues.push_back(v);
         saveVenueToFile(venues);
         cout << "\nVenue created successfully!\n";
-        cout << "Hall " << v.hall << " | Location: " << v.location
+        cout << "| Venue Type : " << v.type << " | Location: " << v.location
              << " | Capacity: " << v.capacity
              << " | Price: RM" << v.price
              << "\n";
@@ -1345,7 +1292,7 @@ void viewVenues(const vector<Venue>& venues) {
     }
 
     for (const auto& v : venues) {
-        cout << "Hall " << v.hall
+        cout << " | Venue Type :  " << v.type
              << " | Location: " << v.location
              << " | Capacity: " << v.capacity
              << " | Price: RM" << v.price
