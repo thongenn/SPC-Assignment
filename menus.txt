@@ -1,2 +1,1 @@
-1;Chinese;200;fish;rice
-2;Western;450;steak;salad;fish & chips
+1;Western;400;steak;fish & chips;spaghetti;mushroom soup

@@ -6,6 +6,7 @@
 #include <regex>
 #include <ctime>
 #include <limits>
+#include <iomanip>
 using namespace std;
 
 struct User {
@@ -51,14 +52,16 @@ struct Event {
 };
 
 // Forward declarations
-void mainMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextEventID,int& nextVenueID);
+//user function
 void registerUser();
 void loginUser(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextEventID,int& nextVenueID);
 void userMenu(const string& username,const string& phone, vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextEventID,int& nextVenueID);
+//admin function
 void adminMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextVenueID);
+
+void mainMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextEventID,int& nextVenueID);
 bool validatePhone(const string& phone);
 bool validatePassword(const string& password);
-
 void trim(string& str);
 Date getTodayDate();
 Date parseDate(const string& input);
@@ -67,7 +70,7 @@ bool isBefore(const Date& a, const Date& b);
 bool isValidDate(int year, int month, int day);
 bool hasConflict(const Event& e, const vector<Event>& events);
 void saveDataToFile(const vector<Event>& events);
-void loadDataFromFile(vector<Event>& events);
+void loadDataFromFile(vector<Event>& events,int& nextEventID);
 void saveMenuToFile(const vector<Menu>& menus);
 void loadMenuFromFile(vector<Menu>& menus, int& nextMenuID);
 void saveVenueToFile(const vector<Venue>& venues);
@@ -80,6 +83,7 @@ void customizeMenu(Event& e, vector<Event>& event, vector<Menu>& menus, int& nex
 void createVenue(vector<Venue>& venues,int& nextVenueID);
 void viewVenues(const vector<Venue>& venues);
 
+//user page
 void userMenu(const string& username,const string& phone, vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextEventID) {
     int choice;
     do {
@@ -90,7 +94,7 @@ void userMenu(const string& username,const string& phone, vector<Event>& events,
         cout << "4. View Receipt\n";
         cout << "5. Logout\n";
 
-        // Input validation for choice
+        //input validation
         while (true) {
             cout << "Enter your choice: ";
             if (cin >> choice) {
@@ -140,6 +144,7 @@ void userMenu(const string& username,const string& phone, vector<Event>& events,
     } while (choice != 5);
 }
 
+//admin page
 void adminMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextVenueID) {
     int choice;
     do {
@@ -151,7 +156,7 @@ void adminMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues
         cout << "5. View menus\n";
         cout << "6. Logout\n";
 
-        // Input validation for choice
+        //input validation
         while (true) {
             cout << "Enter your choice: ";
             if (cin >> choice) {
@@ -197,13 +202,41 @@ void adminMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues
     } while (choice != 6);
 }
 
-//register acc
+//user register acc
 void registerUser() {
     User newUser;
     cout << "--- Register New User ---\n";
-    cout << "Enter username (press 0 to go back): ";
-    cin >> newUser.username;
-    if (newUser.username == "0") return;
+
+    while (true) {
+        cout << "Enter username (press 0 to go back): ";
+        cin >> newUser.username;
+        if (newUser.username == "0") return;
+
+        bool duplicateUsername = false;
+        ifstream inFile("users.txt");
+        if (inFile) {
+            string line;
+            while (getline(inFile, line)) {
+                stringstream ss(line);
+                string uname, pass, phone;
+                getline(ss, uname, '|');
+                getline(ss, pass, '|');
+                getline(ss, phone, '|');
+
+                if (uname == newUser.username) {
+                    duplicateUsername = true;
+                    break;
+                }
+            }
+            inFile.close();
+        }
+
+        if (duplicateUsername) {
+            cout << "Username already exists. Please choose a different one.\n";
+        } else {
+            break;
+        }
+    }
 
     do {
         cout << "Enter password (min 6 chars, must include at least one digit): ";
@@ -214,14 +247,40 @@ void registerUser() {
         }
     } while (!validatePassword(newUser.password));
 
-    do {
+    while (true) {
         cout << "Enter phone number : ";
         cin >> newUser.phone;
 
         if (!validatePhone(newUser.phone)) {
             cout << "Invalid phone number! Please try again.\n";
+            continue;
         }
-    } while (!validatePhone(newUser.phone));
+
+        bool duplicatePhone = false;
+        ifstream inFile("users.txt");
+        if (inFile) {
+            string line;
+            while (getline(inFile, line)) {
+                stringstream ss(line);
+                string uname, pass, phone;
+                getline(ss, uname, '|');
+                getline(ss, pass, '|');
+                getline(ss, phone, '|');
+
+                if (phone == newUser.phone) {
+                    duplicatePhone = true;
+                    break;
+                }
+            }
+            inFile.close();
+        }
+
+        if (duplicatePhone) {
+            cout << "Phone number already registered. Please use a different one.\n";
+        } else {
+            break;
+        }
+    }
 
     ofstream outFile("users.txt", ios::app);
     if (!outFile) {
@@ -234,7 +293,7 @@ void registerUser() {
     cout << "Registration successful!\n";
 }
 
-// login
+// login(user n admin)
 void loginUser(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID, int& nextEventID,int& nextVenueID) {
     string username, password;
     cout << "\n--- Login ---\n";
@@ -265,12 +324,10 @@ void loginUser(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues
         istringstream ss(line);
         string fileUser, filePass, filePhone;
 
-        // Correct usage of getline with delimiter
         if (!getline(ss, fileUser, '|')) continue;
         if (!getline(ss, filePass, '|')) continue;
         getline(ss, filePhone); // phone is last field (no delimiter needed)
 
-        // Remove possible carriage return ('\r') at end (Windows issue)
         if (!filePhone.empty() && filePhone.back() == '\r')
             filePhone.pop_back();
 
@@ -375,6 +432,7 @@ void trim(string& str) {
 }
 
 //Save all events to file
+// Save all events to file
 void saveDataToFile(const vector<Event>& events) {
     ofstream file("data.txt");
     if (!file.is_open()) {
@@ -395,23 +453,23 @@ void saveDataToFile(const vector<Event>& events) {
              << e.guestCount << ";"
              << e.theme << ";";
 
-
         // Menu
         file << e.menu.id << ";"
              << e.menu.cuisine << ";"
              << e.menu.price << ";"
              << e.menu.servingStyle << ";";
 
+        // Food items (comma separated)
         for (size_t i = 0; i < e.menu.foodItems.size(); i++) {
             file << e.menu.foodItems[i];
-            if (i < e.menu.foodItems.size() - 1) file << ";";
+            if (i < e.menu.foodItems.size() - 1) file << ",";
         }
-        file << ";";
+        file << ";"; // end of food list
 
-        // Customizations
+        // Customizations (comma separated)
         for (size_t i = 0; i < e.customizations.size(); i++) {
             file << e.customizations[i];
-            if (i < e.customizations.size() - 1) file << ";";
+            if (i < e.customizations.size() - 1) file << ",";
         }
 
         file << "\n"; // one line per event
@@ -421,10 +479,8 @@ void saveDataToFile(const vector<Event>& events) {
     cout << "Events saved successfully.\n";
 }
 
-
-
 // Load all events from file
-void loadDataFromFile(vector<Event>& events) {
+void loadDataFromFile(vector<Event>& events,int& nextEventI) {
     ifstream file("data.txt");
     if (!file.is_open()) {
         cout << "No existing data file found. Starting fresh.\n";
@@ -477,17 +533,23 @@ void loadDataFromFile(vector<Event>& events) {
             stringstream foodStream(tokens[index++]);
             string foodItem;
             while (getline(foodStream, foodItem, ',')) {
+                trim(foodItem);
                 if (!foodItem.empty()) e.menu.foodItems.push_back(foodItem);
             }
         }
 
-        //customizations
+        //Customizations
         if (index < tokens.size()) {
             stringstream custStream(tokens[index++]);
             string custItem;
             while (getline(custStream, custItem, ',')) {
+                trim(custItem);
                 if (!custItem.empty()) e.customizations.push_back(custItem);
             }
+        }
+
+        if (e.id >= nextEventI) {
+            nextEventI = e.id + 1;
         }
 
         events.push_back(e);
@@ -495,11 +557,8 @@ void loadDataFromFile(vector<Event>& events) {
 
     file.close();
     cout << "Events loaded successfully. " << events.size() << " events available.\n";
+
 }
-
-
-
-
 
 void saveMenuToFile(const vector<Menu>& menus) {
     ofstream file("menus.txt");
@@ -846,40 +905,54 @@ void retrieveEvents(const vector<Event>& events) {
 
     cout << "\n--- Available Events ---\n";
     for (int i = 0; i < events.size(); i++) {
-        cout << "Event id : " << events[i].id << "\n";
-        cout << "Customer: " << events[i].customer << "\n";
-        cout << "Phone number: " << events[i].phone << "\n";
-        cout << "Date: " << dateToString(events[i].date) << "\n";
-        cout << "Venue: " << events[i].venue.type << "\n";
-        cout << "Location : " << events[i].venue.location << "\n";
-        cout << "Capacity: " << events[i].venue.capacity << "\n";
-        cout << "Time Slot: " << events[i].venue.timeslot << "\n";
-        cout << "Theme: " << events[i].theme << "\n";
+        cout << "=====================================\n";
+        cout << left << setw(18) << "Event ID:"      << events[i].id << "\n";
+        cout << left << setw(18) << "Customer:"      << events[i].customer << "\n";
+        cout << left << setw(18) << "Phone:"         << events[i].phone << "\n";
+        cout << left << setw(18) << "Date:"          << dateToString(events[i].date) << "\n";
+        cout << left << setw(18) << "Venue:"         << events[i].venue.type << "\n";
+        cout << left << setw(18) << "Location:"      << events[i].venue.location << "\n";
+        cout << left << setw(18) << "Capacity:"      << events[i].venue.capacity << "\n";
+        cout << left << setw(18) << "Time Slot:"     << events[i].venue.timeslot << "\n";
+        cout << left << setw(18) << "Theme:"         << events[i].theme << "\n";
+        cout << left << setw(18) << "Serving Style:" << events[i].menu.servingStyle << "\n";
 
-
-        cout << "Menu: ";
+        // === Menu Section ===
         if (events[i].menu.cuisine.empty()) {
-            cout << "Not customized yet\n";
+            cout << left << setw(18) << "Menu:" << "Not customized yet\n";
         } else {
-            cout <<events[i].menu.cuisine<< "Cuisine :"
-                 << "\n  Food Items: \n  ";
-            for (int j = 0; j < events[i].menu.foodItems.size(); j++) {
-                cout << events[i].menu.foodItems[j];
-                if (j < events[i].menu.foodItems.size() - 1) cout << "\n  ";
+            cout << "\n----- Menu Details -----\n";
+            cout << left << setw(18) << "Cuisine:"    << events[i].menu.cuisine << "\n";
+            cout << left << setw(18) << "Menu Price:" << "RM " << events[i].menu.price << "\n";
+
+            // Food items with wrapping
+            cout << left << setw(18) << "Food Items:";
+            if (!events[i].menu.foodItems.empty()) {
+                for (int j = 0; j < events[i].menu.foodItems.size(); j++) {
+                    cout << events[i].menu.foodItems[j];
+                    if (j < events[i].menu.foodItems.size() - 1) cout << ", ";
+
+                    // wrap after every 3 items
+                    if ((j + 1) % 3 == 0 && j < events[i].menu.foodItems.size() - 1) {
+                        cout << "\n" << setw(18) << " ";
+                    }
+                }
+                cout << "\n";
+            } else {
+                cout << "None\n";
             }
-            cout << "\n";
+
+            // Customizations (if any)
+            if (!events[i].customizations.empty()) {
+                cout << left << setw(18) << "Customizations:";
+                cout << events[i].customizations[0] << "\n";
+                for (int j = 1; j < events[i].customizations.size(); j++) {
+                    cout << setw(18) << " " << events[i].customizations[j] << "\n";
+                }
+            }
         }
 
-        if (!events[i].customizations.empty()) {
-            cout << "Customizations: ";
-            for (int j = 0; j < events[i].customizations.size(); j++) {
-                cout << events[i].customizations[j];
-                if (j < events[i].customizations.size() - 1) cout << ", ";
-            }
-            cout << "\n";
-        }
-        cout << "Serving Style: " << events[i].menu.servingStyle << "\n";
-        cout << "\n";  // spacing between events
+        cout << "=====================================\n";
     }
 }
 
@@ -1254,7 +1327,7 @@ int main() {
 
     loadVenueFromFile(venues, nextVenueID);
     loadMenuFromFile(menus, nextMenuID);
-    loadDataFromFile(events);
+    loadDataFromFile(events,nextEventID);
 
     system("CLS");
 
