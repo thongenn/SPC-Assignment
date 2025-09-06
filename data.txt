@@ -1,2 +1,0 @@
-1001;te;0111111111;2025-11-12;garden;pj;200;2500;Morning (10:00 - 14:00);200;Natural;1;Western;400;Buffet;steak,fish & chips,spaghetti,mushroom soup;
-1002;tee;0166696376;2025-11-11;beach;morib beach;500;6000;Morning (10:00 - 14:00);300;Natural;10;;6.95144e-310;;;

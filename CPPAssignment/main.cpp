@@ -47,8 +47,10 @@ struct Event {
     Venue venue;
     string theme;
     int guestCount;
+    string notes; //user special request
     Menu menu;
     vector<string> customizations;
+
 };
 
 // Forward declarations
@@ -206,11 +208,19 @@ void adminMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues
 void registerUser() {
     User newUser;
     cout << "--- Register New User ---\n";
+    cout << "--- Enter 0 to go back ---\n";
 
     while (true) {
-        cout << "Enter username (press 0 to go back): ";
-        cin >> newUser.username;
+        cout << "\nEnter username: ";
+        getline(cin, newUser.username);
+
+
         if (newUser.username == "0") return;
+
+        if (newUser.username.empty()) {
+            cout<<"Username cannot be empty!\n";
+            continue;
+        }
 
         bool duplicateUsername = false;
         ifstream inFile("users.txt");
@@ -239,17 +249,30 @@ void registerUser() {
     }
 
     do {
-        cout << "Enter password (min 6 chars, must include at least one digit): ";
-        cin >> newUser.password;
+        cout << "Enter password (min 6 chars & at least one digit): ";
+        getline(cin, newUser.password);
 
+        if (newUser.password == "0") return;
+
+        if (newUser.password.empty()) {
+            cout << "Password cannot be empty !\n";
+            continue;
+        };
         if (!validatePassword(newUser.password)) {
             cout << "Invalid password! Please try again.\n";
         }
-    } while (!validatePassword(newUser.password));
+    } while (newUser.password.empty() || !validatePassword(newUser.password));
 
     while (true) {
-        cout << "Enter phone number : ";
-        cin >> newUser.phone;
+        cout << "Enter phone number: ";
+        getline(cin, newUser.phone);
+
+        if (newUser.phone == "0") return;
+
+        if (newUser.phone.empty()) {
+            cout << "Phone number cannot be empty !\n";
+            continue;
+        }
 
         if (!validatePhone(newUser.phone)) {
             cout << "Invalid phone number! Please try again.\n";
@@ -296,12 +319,27 @@ void registerUser() {
 // login(user n admin)
 void loginUser(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID, int& nextEventID,int& nextVenueID) {
     string username, password;
-    cout << "\n--- Login ---\n";
-    cout << "Enter username (enter 0 to go back) : ";
-    getline(cin >> ws, username);
-    if (username == "0") return;
-    cout << "Enter password: ";
-    getline(cin >> ws, password);
+    cout << "--- Login ---\n";
+    cout << "--- Enter 0 to go back ---\n";
+
+    while (true) {
+        cout << "\nEnter username : ";
+        getline(cin, username);
+        if (username == "0") return;
+        if (username.empty()) {
+            cout << "Username cannot be empty!\n";
+            continue;
+        }break;
+    }
+    while (true) {
+        cout << "Enter password : ";
+        getline(cin, password);
+        if (password == "0") return;
+        if (password.empty()) {
+            cout << "Password cannot be empty!\n";
+            continue;
+        }break;
+    }
 
     // Admin login
     if (username == "admin" && password == "admin") {
@@ -326,7 +364,7 @@ void loginUser(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues
 
         if (!getline(ss, fileUser, '|')) continue;
         if (!getline(ss, filePass, '|')) continue;
-        getline(ss, filePhone); // phone is last field (no delimiter needed)
+        getline(ss, filePhone);
 
         if (!filePhone.empty() && filePhone.back() == '\r')
             filePhone.pop_back();
@@ -346,7 +384,7 @@ void loginUser(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues
 }
 
 bool validatePhone(const string& phone) {
-    regex phonePattern("^[0-9]{10,11}$");
+    regex phonePattern("^01[0-9]{8}$");
     return regex_match(phone, phonePattern);
 }
 
@@ -431,7 +469,6 @@ void trim(string& str) {
     }
 }
 
-//Save all events to file
 // Save all events to file
 void saveDataToFile(const vector<Event>& events) {
     ofstream file("data.txt");
@@ -451,7 +488,8 @@ void saveDataToFile(const vector<Event>& events) {
              << e.venue.price << ";"
              << e.venue.timeslot << ";"
              << e.guestCount << ";"
-             << e.theme << ";";
+             << e.theme << ";"
+             << e.notes << ";";
 
         // Menu
         file << e.menu.id << ";"
@@ -521,6 +559,7 @@ void loadDataFromFile(vector<Event>& events,int& nextEventI) {
         e.venue.timeslot = tokens[index++];
         e.guestCount = stoi(tokens[index++]);
         e.theme = tokens[index++];
+        e.notes = tokens[index++];
 
         //menu
         e.menu.id = stoi(tokens[index++]);
@@ -714,6 +753,7 @@ void registerEvent(const string& username,const string& phone, vector<Event>& ev
     e.id = nextEventID++;
     e.customer = username;
     e.phone = phone;
+    cout << "\n----- Register Event (Enter 0 to back to main menu) ----\n";
 
     if (venues.empty()) {
         cout << "No venues available! Please contact admin to create venues first.\n";
@@ -724,13 +764,19 @@ void registerEvent(const string& username,const string& phone, vector<Event>& ev
 
     // Date validation
     while (true) {
-        cout << "Enter event date (yyyy-mm-dd) or 0 to cancel: ";
+        cout << "Enter event date (yyyy-mm-dd): ";
         string dateInput;
         getline(cin, dateInput);
+        trim(dateInput);
 
         if (dateInput == "0") {
             cout << "Event registration cancelled.\n";
             return;
+        }
+
+        if (dateInput.empty()) {
+            cout << "Date cannot be empty !\n";
+            continue;
         }
 
         e.date = parseDate(dateInput);
@@ -764,23 +810,38 @@ void registerEvent(const string& username,const string& phone, vector<Event>& ev
         bool found = false;
 
         while (true) {
-            cout << "Enter venue ID: ";
-            if (cin >> venueID) {
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                for (const auto& v : venues) {
-                    if (v.id == venueID) {
-                        chosenVenue = v;
-                        found = true;
-                        break;
-                    }
-                }
-                if (found) break;
-                cout << "Invalid venue ID! Try again.\n";
-            } else {
-                cout << "Invalid input! Please enter a number.\n";
-                cin.clear();
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Enter venue ID : ";
+            string input;
+            getline(cin, input);
+            trim(input);
+
+            if (input.empty()) {
+                cout << "Venue ID cannot be empty! Please try again.\n";
+                continue;
             }
+
+            bool isNumeric = all_of(input.begin(), input.end(), ::isdigit);
+            if (!isNumeric) {
+                cout << "Invalid input! Please enter a number.\n";
+                continue;
+            }
+
+            venueID = stoi(input);
+            if (venueID == 0) {
+                cout << "Event registration cancelled.\n";
+                return;
+            }
+
+            for (const auto& v : venues) {
+                if (v.id == venueID) {
+                    chosenVenue = v;
+                    found = true;
+                    break;
+                }
+            }
+
+            if (found) break;
+            cout << "Invalid venue ID! Try again.\n";
         }
 
         e.venue = chosenVenue;
@@ -788,25 +849,39 @@ void registerEvent(const string& username,const string& phone, vector<Event>& ev
         //slot
         int slotChoice;
         while (true) {
-            cout << "Choose slot (1=Morning (10:00 - 14:00), 2=Evening (18:00 - 22:00): ";
-            if (cin >> slotChoice) {
-                if (slotChoice == 1 || slotChoice == 2) {
-                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                    break;
-                } else {
-                    cout << "Invalid slot selection. Please enter 1 or 2.\n";
-                }
-            } else {
+            cout << "Choose slot (1=Morning (10:00 - 14:00), 2=Evening (18:00 - 22:00) ): ";
+            string input;
+            getline(cin, input);
+            trim(input);
+
+            if (input.empty()) {
+                cout << "Slot selection cannot be empty! Please try again.\n";
+                continue;
+            }
+
+            bool isNumeric = all_of(input.begin(), input.end(), ::isdigit);
+            if (!isNumeric) {
                 cout << "Invalid input! Please enter a number.\n";
-                cin.clear();
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                continue;
+            }
+
+            slotChoice = stoi(input);
+            if (slotChoice == 0) {
+                cout << "Event registration cancelled.\n";
+                return;
+            }
+
+            if (slotChoice == 1 || slotChoice == 2) {
+                break;
+            } else {
+                cout << "Invalid slot selection. Please enter 1 or 2.\n";
             }
         }
 
         chosenSlot = (slotChoice == 1) ? "Morning (10:00 - 14:00)" : "Evening (18:00 - 22:00)";
         e.venue.timeslot = chosenSlot;
 
-        //Check for conflicts
+        //check conflicts
         if (hasConflict(e, events)) {
             cout << "Error: This venue and time slot is already booked!\n"
                  << "Please choose a different venue or time slot.\n";
@@ -816,39 +891,73 @@ void registerEvent(const string& username,const string& phone, vector<Event>& ev
         }
     }
 
-    //guest count
     while (true) {
-        cout << "Enter expected number of guests: ";
-        if (cin >> e.guestCount && e.guestCount > 10) {
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            if (e.guestCount <= e.venue.capacity) break;
-            else cout << "Guest count exceeds venue capacity (" << e.venue.capacity << "). Try again.\n";
-        } else {
+        cout << "Enter expected number of guests (min 10, max " << e.venue.capacity << ") : ";
+        string input;
+        getline(cin, input);
+        trim(input);
+
+        if (input.empty()) {
+            cout << "Guest count cannot be empty! Please try again.\n";
+            continue;
+        }
+
+        // Check if input is numeric
+        bool isNumeric = all_of(input.begin(), input.end(), ::isdigit);
+        if (!isNumeric) {
             cout << "Invalid input! Please enter a number.\n";
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            continue;
+        }
+
+        int guestCount = stoi(input);
+        if (guestCount == 0) {
+            cout << "Event registration cancelled.\n";
+            return;
+        }
+
+        if (guestCount < 10) {
+            cout << "Guest count must be at least 10. Try again.\n";
+        } else if (guestCount > e.venue.capacity) {
+            cout << "Guest count exceeds venue capacity (" << e.venue.capacity << "). Try again.\n";
+        } else {
+            e.guestCount = guestCount;
+            break;
         }
     }
 
     // Choose theme
     int themeChoice;
     while (true) {
-        cout << "Select theme: \n";
-        cout << "1. Chinese Tradisional\n2. Indian Tradisional\n3. Malay Tradisional\n"
+        cout << "Select theme:\n";
+        cout << "1. Chinese Traditional\n2. Indian Traditional\n3. Malay Traditional\n"
              << "4. Vintage\n5. Natural\n6. Others\n";
-        cout << "Enter choice: ";
+        cout << "Enter choice : ";
 
-        if (cin >> themeChoice) {
-            if (themeChoice >= 1 && themeChoice <= 6) {
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                break;
-            } else {
-                cout << "Invalid choice! Please enter a number between 1-6.\n";
-            }
-        } else {
+        string input;
+        getline(cin, input);
+        trim(input);
+
+        if (input.empty()) {
+            cout << "Theme choice cannot be empty! Please try again.\n";
+            continue;
+        }
+
+        bool isNumeric = all_of(input.begin(), input.end(), ::isdigit);
+        if (!isNumeric) {
             cout << "Invalid input! Please enter a number.\n";
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            continue;
+        }
+
+        themeChoice = stoi(input);
+        if (themeChoice == 0) {
+            cout << "Event registration cancelled.\n";
+            return;
+        }
+
+        if (themeChoice >= 1 && themeChoice <= 6) {
+            break;
+        } else {
+            cout << "Invalid choice! Please enter a number between 1-6.\n";
         }
     }
 
@@ -863,29 +972,63 @@ void registerEvent(const string& username,const string& phone, vector<Event>& ev
                 cout << "Enter custom theme: ";
                 getline(cin, e.theme);
                 trim(e.theme);
+                if (e.theme == "0") {
+                    cout << "Event registration cancelled.\n";
+                    return;
+                }
                 if (!e.theme.empty()) break;
                 cout << "Theme cannot be empty! Please try again.\n";
             }
             break;
     }
 
-    //summary
-    cout << "\nEvent Summary:\n"
-         << "Venue: " << e.venue.type << "\n"
-         << "Location: " << e.venue.location << "\n"
-         << "Timeslot: " << e.venue.timeslot << "\n"
-         << "Guests: " << e.guestCount << "\n"
-         << "Theme: " << e.theme << "\n";
+    //special request
+    cout << "\nAny special requests or notes? (press Enter to skip, or enter 0 to cancel): ";
+    getline(cin, e.notes);
+    trim(e.notes);
 
+    if (e.notes == "0") {
+        cout << "Event registration cancelled.\n";
+        return;
+    }
+
+    if (e.notes.empty()) {
+        e.notes = "None";
+    }
+
+    //summary
+    cout << "\n========== Event Summary ==========\n";
+    cout << left << setw(15) << "Venue:"     << e.venue.type << endl;
+    cout << left << setw(15) << "Location:"  << e.venue.location << endl;
+    cout << left << setw(15) << "Timeslot:"  << e.venue.timeslot << endl;
+    cout << left << setw(15) << "Guests:"    << e.guestCount << endl;
+    cout << left << setw(15) << "Theme:"     << e.theme << endl;
+    cout << left << setw(15) << "Notes:" << e.notes << endl;
+    cout << "===================================\n";
+
+    //ask confirmation
+    string input;
     char confirm;
     while (true) {
         cout << "\nConfirm event registration? (y/n): ";
-        cin >> confirm;
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
-        if (confirm == 'y' || confirm == 'Y' || confirm == 'n' || confirm == 'N') {
+        getline(cin, input);
+        trim(input);
+
+        if (input.empty()) {
+            cout << "Input cannot be empty! Please enter 'y', 'n'.\n";
+            continue;
+        }
+
+        if (input == "0") {
+            cout << "Event registration cancelled.\n";
+            return;
+        }
+
+        if (input == "y" || input == "Y" || input == "n" || input == "N") {
+            confirm = input[0];
             break;
         }
-        cout << "Invalid input! Please enter 'y' or 'n'.\n";
+        cout << "Invalid input! Please enter 'y', 'n', or '0'.\n";
     }
 
     if (confirm == 'y' || confirm == 'Y') {
@@ -903,6 +1046,7 @@ void retrieveEvents(const vector<Event>& events) {
         return;
     }
 
+    //registered event
     cout << "\n--- Available Events ---\n";
     for (int i = 0; i < events.size(); i++) {
         cout << "=====================================\n";
@@ -915,9 +1059,10 @@ void retrieveEvents(const vector<Event>& events) {
         cout << left << setw(18) << "Capacity:"      << events[i].venue.capacity << "\n";
         cout << left << setw(18) << "Time Slot:"     << events[i].venue.timeslot << "\n";
         cout << left << setw(18) << "Theme:"         << events[i].theme << "\n";
+        cout << left << setw(18) << "Notes:"        << events[i].notes << "\n";
         cout << left << setw(18) << "Serving Style:" << events[i].menu.servingStyle << "\n";
 
-        // === Menu Section ===
+        //menu
         if (events[i].menu.cuisine.empty()) {
             cout << left << setw(18) << "Menu:" << "Not customized yet\n";
         } else {

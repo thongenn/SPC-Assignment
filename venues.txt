@@ -1,2 +1,0 @@
-2001;garden;pj;200;2500;Both
-2002;beach;morib beach;500;6000;Both
