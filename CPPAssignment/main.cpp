@@ -50,7 +50,9 @@ struct Event {
     string notes; //user special request
     Menu menu;
     vector<string> customizations;
-
+    double totalCost = 0.0;
+    bool isPaid = false;
+    string paymentMethod;
 };
 
 // Forward declarations
@@ -60,7 +62,6 @@ void loginUser(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues
 void userMenu(const string& username,const string& phone, vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextEventID,int& nextVenueID);
 //admin function
 void adminMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextVenueID);
-
 void mainMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextEventID,int& nextVenueID);
 bool validatePhone(const string& phone);
 bool validatePassword(const string& password);
@@ -84,6 +85,9 @@ void viewMenus(const vector<Menu>& menus);
 void customizeMenu(Event& e, vector<Event>& event, vector<Menu>& menus, int& nextMenuID);
 void createVenue(vector<Venue>& venues,int& nextVenueID);
 void viewVenues(const vector<Venue>& venues);
+double calculateTotalCost(const Event& e);
+void makePayment(const string &username, vector<Event> &events);
+void printReceipt(const string &username, const vector<Event> &events);
 
 //user page
 void userMenu(const string& username,const string& phone, vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextEventID) {
@@ -134,10 +138,10 @@ void userMenu(const string& username,const string& phone, vector<Event>& events,
                 }
                 break;
             case 3:
-                cout << "Payment & Checkout selected...\n";
+                makePayment(username,events);
                 break;
             case 4:
-                cout << "Receipt displayed...\n";
+                printReceipt(username,events);
                 break;
             case 5:
                 cout << "Logging out...\n";
@@ -207,8 +211,8 @@ void adminMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues
 //user register acc
 void registerUser() {
     User newUser;
-    cout << "--- Register New User ---\n";
-    cout << "--- Enter 0 to go back ---\n";
+    cout << "---- Register New User (Enter 0 to go back) ----\n";
+
 
     while (true) {
         cout << "\nEnter username: ";
@@ -319,8 +323,7 @@ void registerUser() {
 // login(user n admin)
 void loginUser(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID, int& nextEventID,int& nextVenueID) {
     string username, password;
-    cout << "--- Login ---\n";
-    cout << "--- Enter 0 to go back ---\n";
+    cout << "---- Login (Enter 0 to go back) ----\n";
 
     while (true) {
         cout << "\nEnter username : ";
@@ -469,6 +472,13 @@ void trim(string& str) {
     }
 }
 
+double calculateTotalCost(const Event &e) {
+    int tables = (e.guestCount + 9) / 10; // 10 guests per table
+    double menuCost = (e.menu.id != 0) ? (e.menu.price * tables) : 0.0;
+    return e.venue.price + menuCost;
+}
+
+
 // Save all events to file
 void saveDataToFile(const vector<Event>& events) {
     ofstream file("data.txt");
@@ -509,8 +519,11 @@ void saveDataToFile(const vector<Event>& events) {
             file << e.customizations[i];
             if (i < e.customizations.size() - 1) file << ",";
         }
+        file << ";";
 
-        file << "\n"; // one line per event
+        //payment
+        file << e.totalCost << ";" << (e.isPaid ? "1" : "0") << ";" << e.paymentMethod;
+        file << "\n";
     }
 
     file.close();
@@ -540,7 +553,7 @@ void loadDataFromFile(vector<Event>& events,int& nextEventI) {
             tokens.push_back(token);
         }
 
-        if (tokens.size() < 16) {
+        if (tokens.size() < 18) {
             cout << "Invalid event format: " << line << endl;
             continue;
         }
@@ -586,6 +599,25 @@ void loadDataFromFile(vector<Event>& events,int& nextEventI) {
                 if (!custItem.empty()) e.customizations.push_back(custItem);
             }
         }
+
+        //payment
+        if (index < tokens.size()) {
+            try {
+                e.totalCost = stod(tokens[index++]);
+            } catch (...) {
+                e.totalCost = 0.0;
+            }
+        } else {
+            e.totalCost = 0.0;
+        }
+
+        if (index < tokens.size()) {
+            e.isPaid = (tokens[index++] == "1");
+        } else {
+            e.isPaid = false;
+        }
+        e.paymentMethod = tokens[index++];
+
 
         if (e.id >= nextEventI) {
             nextEventI = e.id + 1;
@@ -753,7 +785,8 @@ void registerEvent(const string& username,const string& phone, vector<Event>& ev
     e.id = nextEventID++;
     e.customer = username;
     e.phone = phone;
-    cout << "\n----- Register Event (Enter 0 to back to main menu) ----\n";
+
+    cout << "\n--- Register Event (Enter 0 to go back to main menu) ---\n";
 
     if (venues.empty()) {
         cout << "No venues available! Please contact admin to create venues first.\n";
@@ -764,7 +797,8 @@ void registerEvent(const string& username,const string& phone, vector<Event>& ev
 
     // Date validation
     while (true) {
-        cout << "Enter event date (yyyy-mm-dd): ";
+        cout << "\n--- Event Date ---\n";
+        cout << "Enter event date (yyyy-mm-dd, or 0 to cancel): ";
         string dateInput;
         getline(cin, dateInput);
         trim(dateInput);
@@ -775,7 +809,7 @@ void registerEvent(const string& username,const string& phone, vector<Event>& ev
         }
 
         if (dateInput.empty()) {
-            cout << "Date cannot be empty !\n";
+            cout << "Date cannot be empty!\n";
             continue;
         }
 
@@ -796,10 +830,10 @@ void registerEvent(const string& username,const string& phone, vector<Event>& ev
     string chosenSlot;
 
     while (!validVenue) {
-        cout << "\nAvailable Venues:\n";
+        cout << "\n--- Available Venues ---\n";
         for (const auto& v : venues) {
             cout << "[" << v.id << "] "
-                 << " | Venue: " << v.type
+                 << "Venue: " << v.type
                  << " | Location: " << v.location
                  << " | Capacity: " << v.capacity
                  << " | Price: RM" << v.price << "\n";
@@ -810,7 +844,7 @@ void registerEvent(const string& username,const string& phone, vector<Event>& ev
         bool found = false;
 
         while (true) {
-            cout << "Enter venue ID : ";
+            cout << "Enter venue ID (or 0 to cancel): ";
             string input;
             getline(cin, input);
             trim(input);
@@ -849,7 +883,8 @@ void registerEvent(const string& username,const string& phone, vector<Event>& ev
         //slot
         int slotChoice;
         while (true) {
-            cout << "Choose slot (1=Morning (10:00 - 14:00), 2=Evening (18:00 - 22:00) ): ";
+            cout << "\n--- Venue Slot ---\n";
+            cout << "Choose slot (1=Morning (10:00 - 14:00), 2=Evening (18:00 - 22:00), 0=Cancel): ";
             string input;
             getline(cin, input);
             trim(input);
@@ -892,7 +927,8 @@ void registerEvent(const string& username,const string& phone, vector<Event>& ev
     }
 
     while (true) {
-        cout << "Enter expected number of guests (min 10, max " << e.venue.capacity << ") : ";
+        cout << "\n--- Guest Information ---\n";
+        cout << "Enter expected number of guests (min 10, max " << e.venue.capacity << ", 0=Cancel): ";
         string input;
         getline(cin, input);
         trim(input);
@@ -925,13 +961,16 @@ void registerEvent(const string& username,const string& phone, vector<Event>& ev
         }
     }
 
+    e.totalCost = calculateTotalCost(e);
+    e.isPaid = false;
+
     // Choose theme
     int themeChoice;
     while (true) {
-        cout << "Select theme:\n";
+        cout << "\n--- Theme Selection ---\n";
         cout << "1. Chinese Traditional\n2. Indian Traditional\n3. Malay Traditional\n"
              << "4. Vintage\n5. Natural\n6. Others\n";
-        cout << "Enter choice : ";
+        cout << "Enter choice (0 to cancel): ";
 
         string input;
         getline(cin, input);
@@ -969,7 +1008,7 @@ void registerEvent(const string& username,const string& phone, vector<Event>& ev
         case 5: e.theme = "Natural"; break;
         case 6:
             while (true) {
-                cout << "Enter custom theme: ";
+                cout << "Enter custom theme (or 0 to cancel): ";
                 getline(cin, e.theme);
                 trim(e.theme);
                 if (e.theme == "0") {
@@ -983,7 +1022,8 @@ void registerEvent(const string& username,const string& phone, vector<Event>& ev
     }
 
     //special request
-    cout << "\nAny special requests or notes? (press Enter to skip, or enter 0 to cancel): ";
+    cout << "\n--- Special Requests ---\n";
+    cout << "Any special requests or notes? (Press Enter to skip, 0 to cancel): ";
     getline(cin, e.notes);
     trim(e.notes);
 
@@ -1003,14 +1043,14 @@ void registerEvent(const string& username,const string& phone, vector<Event>& ev
     cout << left << setw(15) << "Timeslot:"  << e.venue.timeslot << endl;
     cout << left << setw(15) << "Guests:"    << e.guestCount << endl;
     cout << left << setw(15) << "Theme:"     << e.theme << endl;
-    cout << left << setw(15) << "Notes:" << e.notes << endl;
+    cout << left << setw(15) << "Notes:"     << e.notes << endl;
     cout << "===================================\n";
 
     //ask confirmation
     string input;
     char confirm;
     while (true) {
-        cout << "\nConfirm event registration? (y/n): ";
+        cout << "\nConfirm event registration? (y/n, 0=Cancel): ";
         getline(cin, input);
         trim(input);
 
@@ -1058,9 +1098,10 @@ void retrieveEvents(const vector<Event>& events) {
         cout << left << setw(18) << "Location:"      << events[i].venue.location << "\n";
         cout << left << setw(18) << "Capacity:"      << events[i].venue.capacity << "\n";
         cout << left << setw(18) << "Time Slot:"     << events[i].venue.timeslot << "\n";
+        cout << left << setw(18) << "Guests:"        << events[i].guestCount << "\n";
         cout << left << setw(18) << "Theme:"         << events[i].theme << "\n";
         cout << left << setw(18) << "Notes:"        << events[i].notes << "\n";
-        cout << left << setw(18) << "Serving Style:" << events[i].menu.servingStyle << "\n";
+        cout << left << setw(18) << "Venue Price:" << events[i].venue.price << "\n";
 
         //menu
         if (events[i].menu.cuisine.empty()) {
@@ -1068,6 +1109,7 @@ void retrieveEvents(const vector<Event>& events) {
         } else {
             cout << "\n----- Menu Details -----\n";
             cout << left << setw(18) << "Cuisine:"    << events[i].menu.cuisine << "\n";
+            cout << left << setw(18) << "Serving Style:" << events[i].menu.servingStyle << "\n";
             cout << left << setw(18) << "Menu Price:" << "RM " << events[i].menu.price << "\n";
 
             // Food items with wrapping
@@ -1096,6 +1138,12 @@ void retrieveEvents(const vector<Event>& events) {
                 }
             }
         }
+
+        //payment
+        cout << "\n----- Payment Details -----\n";
+        double total = calculateTotalCost(events[i]);
+        cout << left << setw(18) << "Total Cost:" << "RM " << total << "\n";
+        cout << left << setw(18) << "Status:"     << (events[i].isPaid ? "PAID" : "PENDING") << "\n";
 
         cout << "=====================================\n";
     }
@@ -1260,6 +1308,7 @@ void customizeMenu(Event& e, vector<Event>& events, vector<Menu>& menus, int& ne
     }
 
     e.menu = menus[menuChoice - 1];
+    e.totalCost = calculateTotalCost(e);
 
     // Customization choice validation
     char customizationChoice;
@@ -1321,6 +1370,275 @@ void customizeMenu(Event& e, vector<Event>& events, vector<Menu>& menus, int& ne
         cout << "Menu customization cancelled.\n";
     }
 }
+
+void makePayment(const string &username, vector<Event> &events) {
+    Event* userEvent = nullptr;
+    for (auto &e : events) {
+        if (e.customer == username) {
+            userEvent = &e;
+            break;
+        }
+    }
+
+    if (!userEvent) {
+        cout << "You have no events to pay. Please register an event...\n";
+        cin.get();
+        return;
+    }
+
+    Event &e = *userEvent;
+    if (e.isPaid) {
+        cout << "You already paid for this event. Here is your event summary : \n";
+        cout << "\n============= Event Summary =============\n";
+        cout << left << setw(19) << "Event ID:"      << e.id << "\n";
+        cout << left << setw(19) << "Customer:"            << e.customer << "\n";
+        cout << left << setw(19) << "Venue:"               << e.venue.type << "\n";
+        cout << left << setw(19) << "Date:"                << dateToString(e.date) << "\n";
+        cout << left << setw(19) << "Guests:"              << e.guestCount << "\n";
+        cout << left << setw(19) << "Cuisine:"                << e.menu.cuisine << "\n";
+        cout << left << setw(19) << "Serving Style:"          << e.menu.servingStyle << "\n";
+        cout << left << setw(19) << "Menu Items:";
+        if (!e.menu.foodItems.empty()) {
+            for (size_t i = 0; i < e.menu.foodItems.size(); ++i) {
+                cout << e.menu.foodItems[i];
+                if (i < e.menu.foodItems.size() - 1) cout << ", ";
+            }
+        } else {
+            cout << "None";
+        }
+        cout << "\n";
+        cout << left << setw(19) << "Custom Notes:"           << (e.notes.empty() ? "-" : e.notes) << "\n";
+        cout << left << setw(19) << "Total Amount (RM):"      << fixed << setprecision(2) << e.totalCost << "\n";
+        cout << left << setw(19) << "Paid:"                   << (e.isPaid ? "Yes" : "No") << "\n";
+        cout << "========================================\n";
+
+        cout << "Press enter to back to user page...";
+        cin.get();
+        return;
+    }
+
+    //summary
+    cout << "\n============= Event Summary =============\n";
+    cout << left << setw(18) << "Event ID:"      << e.id << "\n";
+    cout << left << setw(18) << "Customer:"            << e.customer << "\n";
+    cout << left << setw(18) << "Venue:"               << e.venue.type << "\n";
+    cout << left << setw(18) << "Date:"                << dateToString(e.date) << "\n";
+    cout << left << setw(18) << "Guests:"              << e.guestCount << "\n";
+    cout << left << setw(18) << "Cuisine:"                << e.menu.cuisine << "\n";
+    cout << left << setw(18) << "Serving Style:"          << e.menu.servingStyle << "\n";
+    cout << left << setw(18) << "Menu Items:";
+    if (!e.menu.foodItems.empty()) {
+        for (size_t i = 0; i < e.menu.foodItems.size(); ++i) {
+            cout << e.menu.foodItems[i];
+            if (i < e.menu.foodItems.size() - 1) cout << ", ";
+        }
+    } else {
+        cout << "None";
+    }
+    cout << "\n";
+    cout << left << setw(18) << "Custom Notes:"           << (e.notes.empty() ? "-" : e.notes) << "\n";
+    cout << left << setw(18) << "Total Amount (RM):"      << fixed << setprecision(2) << e.totalCost << "\n";
+    cout << left << setw(18) << "Paid:"                   << (e.isPaid ? "Yes" : "No") << "\n";
+    cout << "========================================\n";
+
+    char confirm;
+    cout << "Proceed to payment? (Y/N): ";
+    cin >> confirm;
+    cin.ignore();
+    if (tolower(confirm) != 'y') {
+        cout << "Payment cancelled.\n";
+        return;
+    }
+
+    cout << "\n--- Payment ---\n";
+    while (true) {
+        cout << "Choose method (1.Card  2.Tng eWallet  3.Online Banking): ";
+        string input;
+        getline(cin, input);
+        trim(input);
+
+        if (input.empty()) {
+            cout << "Payment method cannot be empty! Please try again.\n";
+            continue;
+        }
+
+        bool isNumeric = all_of(input.begin(), input.end(), ::isdigit);
+        if (!isNumeric) {
+            cout << "Invalid input! Please enter a number.\n";
+            continue;
+        }
+
+        int method = stoi(input);
+
+        if (method == 1) {
+            e.paymentMethod = "Card";
+
+            string cardNumber;
+            while (true) {
+                cout << "Enter Card Number (16 digits): ";
+                getline(cin, cardNumber);
+                trim(cardNumber);
+
+                if (cardNumber.empty()) {
+                    cout << "Card number cannot be empty!\n";
+                    continue;
+                }
+                if (cardNumber.size() != 16 || !all_of(cardNumber.begin(), cardNumber.end(), ::isdigit)) {
+                    cout << "Invalid card number! Must be 16 digits.\n";
+                    continue;
+                }
+                break;
+            }
+            break;
+
+        } else if (method == 2) {
+            e.paymentMethod = "Tng eWallet";
+
+            string ePhone;
+            while (true) {
+                cout << "Phone Number: ";
+                getline(cin, ePhone);
+                trim(ePhone);
+
+                if (ePhone.empty()) {
+                    cout << "Phone number cannot be empty!\n";
+                    continue;
+                }
+                if (!validatePhone(ePhone)) {
+                    cout << "Invalid phone number!.\n";
+                    continue;
+                }
+                break;
+            }
+            string pin;
+            while (true) {
+                cout << "Enter 6-digit eWallet PIN: ";
+                getline(cin, pin);
+                trim(pin);
+
+                if (pin.empty()) {
+                    cout << "PIN cannot be empty!\n";
+                    continue;
+                }
+                if (pin.size() != 6 || !all_of(pin.begin(), pin.end(), ::isdigit)) {
+                    cout << "Invalid PIN! Must be exactly 6 digits.\n";
+                    continue;
+                }
+                break;
+            }
+            break;
+
+        } else if (method == 3) {
+            e.paymentMethod = "Online Banking";
+
+            string bankName, refNo;
+            while (true) {
+                cout << "Enter Bank Name : ";
+                getline(cin, bankName);
+                trim(bankName);
+
+                if (bankName.empty()) {
+                    cout << "Bank name cannot be empty!\n";
+                    continue;
+                }
+                if (any_of(bankName.begin(), bankName.end(), ::isdigit)) {
+                    cout << "Invalid bank name! It cannot contain numbers.\n";
+                    continue;
+                }
+                break; // bank name is valid
+            }
+
+            // Second: get and validate reference number
+            while (true) {
+                cout << "Enter Transaction Reference Number: ";
+                getline(cin, refNo);
+                trim(refNo);
+
+                if (refNo.empty()) {
+                    cout << "Reference Number cannot be empty!\n";
+                    continue;
+                }
+                if (!all_of(refNo.begin(), refNo.end(), ::isdigit)) {
+                    cout << "Reference number must be numeric!\n";
+                    continue;
+                }
+                if (refNo.size() < 10) {
+                    cout << "Reference number must be at least 10 digits!\n";
+                    continue;
+                }
+                break; // reference number is valid
+            }
+            break; // exit payment method choice
+        } else {
+            cout << "Invalid choice! Please enter 1, 2, or 3.\n";
+        }
+    }
+
+    e.isPaid = true;
+    cout << "\nPayment successful via " << e.paymentMethod << "!\n";
+    saveDataToFile(events);
+}
+
+void printReceipt(const string &username, const vector<Event> &events) {
+    // Find the user's event
+    const Event* userEvent = nullptr;
+    for (const auto &e : events) {
+        if (e.customer == username) {
+            userEvent = &e;
+            break;
+        }
+    }
+
+    if (!userEvent) {
+        cout << "No event found for this user.\n";
+        return;
+    }
+
+    const Event &e = *userEvent;
+
+    if (!e.isPaid) {
+        cout << "No receipt available. Please complete your payment first.\n";
+        cout << "Press enter to back to user page....";
+        cin.get();
+        return;
+    }
+
+    // Print receipt only if paid
+    cout << "\n=============================================\n";
+    cout << "              PAYMENT RECEIPT\n";
+    cout << "=============================================\n";
+    cout << left << setw(18) << "Receipt No:"      << "R-" << e.id << "\n";
+    cout << left << setw(18) << "Event ID:"        << e.id << "\n";
+    cout << left << setw(18) << "Customer:"        << e.customer << "\n";
+    cout << left << setw(18) << "Phone:"           << e.phone << "\n";
+    cout << left << setw(18) << "Date:"            << dateToString(e.date) << "\n";
+    cout << left << setw(18) << "Venue:"           << e.venue.type << " (" << e.venue.location << ")\n";
+    cout << left << setw(18) << "Guests:"          << e.guestCount << "\n";
+    cout << left << setw(18) << "Cuisine:"         << e.menu.cuisine << "\n";
+    cout << left << setw(18) << "Serving Style:"   << e.menu.servingStyle << "\n";
+    cout << left << setw(18) << "Menu Items:";
+    if (!e.menu.foodItems.empty()) {
+        for (size_t i = 0; i < e.menu.foodItems.size(); ++i) {
+            cout << e.menu.foodItems[i];
+            if (i < e.menu.foodItems.size() - 1) cout << ", ";
+        }
+    } else {
+        cout << "None";
+    }
+    cout << "\n";
+    cout << left << setw(18) << "Custom Notes:"           << (e.notes.empty() ? "-" : e.notes) << "\n";
+    cout << left << setw(18) << "Payment Method:"  << e.paymentMethod << "\n";
+    cout << left << setw(18) << "Total Amount (RM):"
+         << fixed << setprecision(2) << e.totalCost << "\n";
+    cout << "=============================================\n";
+    cout << "  Thank you for your payment.\n";
+    cout << "=============================================\n";
+
+    cout << "Press enter to back to user page...";
+    cin.get();
+    return;
+}
+
 
 void createVenue(vector<Venue>& venues,int& nextVenueID) {
     Venue v;
