@@ -1,83 +1,12 @@
 1
 Chinese
-2500
-12
-Crab Meat & Shrimp Paste Claw
-Honey Glazed Char Siew (BBQ Pork)
-Crispy Five-Spice Bean Curd Skin Roll
-Scallop & Spinacch Dumpling
-Lobster in Superior Broth
-Cripspy Roasted Duck
-Steamed Fish
-Steam Scallops wth Garlic & Vermicelli
-Braised Shiitake Mushrooms with Seasonal Greens in Oyster Sause
-Yangzhou Fried Rice
-Sweet Red Bean Soup
-"Double Happiness" Dessert Platter
+0
+1
+h
 ---
 2
-Indian
-2000
-12
-Pakora Platter
-Samosa
-Tandoori Chicken Wings
-Butter Chicken
-Lamb Rogan Josh
-Chana Masala
-Jeera Rice
-Plain Naan & Garlic Naan
-Lemon Rice
-Raita
-Gulab Jamun
-Kheer
----
-3
-Malay
-2200
-11
-Satay Platter
-Otak-Otak
-Beef Rendang Curry Puff
-Beef Rendang
-Chicken Curry
-Acar Fish
-Sambal Petai with Prawns
-Nasi Lemak
-Nasi Briyani
-Kuih-Muih Platter
-Cendol
----
-4
-Western
-2400
-11
-Caprese Salad Skewers
-Mini Vol-au-Vents with Creamy Mushrooms
-Roasted Beef Tenderloin with Red Wine Reduction
-Herb-Roasted Chicken Breast with Hollandaice Sause
-Pan-Seared Sea Bass with Lemon Butter Sause
-Roasted Pumpkin & Quinoa Salad
-Garlic Mashed potatoes & Roasted Seasonal Vegetables
-Herb Dinner Rolls
-Wedding Cake
-Chocolate Lava Cake with Vanilla Ice Cream
-Fruit Tarts
----
-5
-Italian
-2300
-12
-Italian Charcuterie & Cheese Board
-Bruschetta
-Truffle Wild Mushroom Risotto
-Pappardelle with Classic Beef Bolognese
-Herb-Crusted Rack of Lamb
-Lemon Herb Roasted Chicken
-Grilled Sea Bass with Olives & Tomatoes
-Roasted Asparagus with Parmesan
-Rosemary Roasted Baby Potatoes
-Tiramisu
-Panna Cotta
-Amaretti Cookies
+Chinese
+0
+1
+toufu
 ---
