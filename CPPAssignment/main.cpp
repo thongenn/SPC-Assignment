@@ -155,10 +155,10 @@ void adminMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues
     int choice;
     do {
         cout << "\n===== Organizer Page (Admin) =====\n";
-        cout << "1. Create venue\n";
-        cout << "2. Create menu\n";
-        cout << "3. View events\n";
-        cout << "4. View venues\n";
+        cout << "1. Venue Management\n";
+        cout << "2. Menu Management\n";
+        cout << "3. Event Management\n";
+        cout << "4. \n";
         cout << "5. View menus\n";
         cout << "6. Logout\n";
 
@@ -1209,19 +1209,26 @@ void createMenu(vector<Menu>& menus, int& nextMenuID) {
     // Price validation
     while (true) {
         cout << "Enter price per table (10 ppl) for this menu: RM";
-        if (cin >> m.price) {
-            if (m.price >= 200) {
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                break;
-            } else {
-                cout << "Price must be at least RM200! Please try again.\n";
-            }
+        string input;
+        getline(cin, input);
+        trim(input);
+
+        regex numberRegex("^[0-9]+(\\.[0-9]+)?$");
+
+        if (!regex_match(input, numberRegex)) {
+            cout << "Invalid input! Digits or Decimal only.\n";
+            continue;
+        }
+
+        double price = stod(input);
+        if (price >= 200) {
+            m.price = price;
+            break;
         } else {
-            cout << "Invalid input! Please enter a valid number.\n";
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Price must be at least RM200! Please try again.\n";
         }
     }
+
 
     // Confirmation
     char confirm;
@@ -1639,7 +1646,6 @@ void printReceipt(const string &username, const vector<Event> &events) {
     return;
 }
 
-
 void createVenue(vector<Venue>& venues,int& nextVenueID) {
     Venue v;
     v.id = nextVenueID++;
@@ -1663,37 +1669,49 @@ void createVenue(vector<Venue>& venues,int& nextVenueID) {
         cout << "Location cannot be empty! Please try again.\n";
     }
 
-    // Capacity validation (100–1000)
+    // Capacity validation
     while (true) {
         cout << "Enter venue capacity : ";
-        if (cin >> v.capacity) {
-            if (v.capacity >= 100) {
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                break;
-            } else {
-                cout << "Capacity must be at least 100 ! Please try again.\n";
-            }
+        string input;
+        getline(cin, input);
+        trim(input);
+
+        regex numberRegex("^[0-9]+$");
+
+        if (!regex_match(input, numberRegex)) {
+            cout << "Invalid input! Numbers only.\n";
+            continue;
+        }
+
+        int capacity = stoi(input);
+        if (capacity >= 100) {
+            v.capacity = capacity;
+            break;
         } else {
-            cout << "Invalid input! Please enter a number.\n";
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Capacity must be at least 100! Please try again.\n";
         }
     }
 
     // Price validation
     while (true) {
         cout << "Enter price for venue rental: RM";
-        if (cin >> v.price) {
-            if (v.price >= 1000) {
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                break;
-            } else {
-                cout << "Price must be at least 1000! Please try again.\n";
-            }
+        string input;
+        getline(cin, input);
+        trim(input);
+
+        regex numberRegex("^[0-9]+(\\.[0-9]+)?$");
+
+        if (!regex_match(input, numberRegex)) {
+            cout << "Invalid input! Numbers only.\n";
+            continue;
+        }
+
+        double price = stod(input);
+        if (price >= 1000) {
+            v.price = price;
+            break;
         } else {
-            cout << "Invalid input! Please enter a number.\n";
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Price must be at least 1000! Please try again.\n";
         }
     }
 
