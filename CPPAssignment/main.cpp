@@ -39,6 +39,15 @@ struct Menu {
     string servingStyle;
 };
 
+struct Feedback {
+    string feedbackId;
+    string type;    // Complaint / Suggestion
+    int rating;
+    string content;
+    string status;  // Pending / In Progress / Resolved
+    string response;
+};
+
 struct Event {
     int id;
     string customer;
@@ -47,19 +56,24 @@ struct Event {
     Venue venue;
     string theme;
     int guestCount;
+    string evstatus; // "Planned", "Comfirmed", "Started", "Postponed", "Ended", "Canceled"
+    string issues;
     string notes; //user special request
     Menu menu;
     vector<string> customizations;
     double totalCost = 0.0;
     bool isPaid = false;
     string paymentMethod;
+    vector<Feedback> feedbackList;
+
 };
+
 
 // Forward declarations
 //user function
 void registerUser();
 void loginUser(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextEventID,int& nextVenueID);
-void userMenu(const string& username,const string& phone, vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextEventID,int& nextVenueID);
+void userMenu(const string& username,const string& phone, vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextEventID);
 //admin function
 void adminMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextVenueID);
 void mainMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextEventID,int& nextVenueID);
@@ -78,37 +92,331 @@ void saveMenuToFile(const vector<Menu>& menus);
 void loadMenuFromFile(vector<Menu>& menus, int& nextMenuID);
 void saveVenueToFile(const vector<Venue>& venues);
 void loadVenueFromFile(vector<Venue>& venues,int& nextVenueID);
-void registerEvent(const string& username,const string& phone,vector<Event>& events, const vector<Menu>& menus, const vector<Venue>& venues,int& nextEventID);
-void retrieveEvents(const vector<Event>& events);
+void registerEvent(const string& username,const string& phone,vector<Event>& events, vector<Menu>& menus, const vector<Venue>& venues,int& nextEventID);
 void createMenu(vector<Menu>& menus, int& nextMenuID);
 void viewMenus(const vector<Menu>& menus);
-void customizeMenu(Event& e, vector<Event>& event, vector<Menu>& menus, int& nextMenuID);
+bool customizeMenu(Event& e, vector<Event>& events, vector<Menu>& menus, int& nextMenuID);
 void createVenue(vector<Venue>& venues,int& nextVenueID);
 void viewVenues(const vector<Venue>& venues);
 double calculateTotalCost(const Event& e);
-void makePayment(const string &username, vector<Event> &events);
+bool makePayment(Event &e);
 void printReceipt(const string &username, const vector<Event> &events);
+void eventMenu(vector<Event>& events);
+void menuMenu(vector<Menu>& menus, int& nextMenuID);
+void venueMenu(vector<Venue>& venues, int& nextVenueID);
+void reportMenu(const vector<Event>& events);
+void userFeedbackMenu(const string& username, vector<Event>& events);
+void staffFeedbackMenu(vector<Event>& events);
+// WQ
+// user
+void submitFeedback(const string& username, vector<Event>& events);
+void deleteFeedback(const string& username, vector<Event>& events);
+void viewFeedback(const string& username, const vector<Event>& events);
+// admin
+void updateFeedbackStatus(vector<Event>& events);
+void viewAllFeedback(const vector<Event>& events);
+void viewSummarizeFeedback(const vector<Event>& events);
+void viewAllEvents(const vector<Event>& events);
+void generateEventReport(const vector<Event>& events);
+void generateMonthlyEventReport (const vector<Event>& events);
+void updateEventStatus(vector<Event>& events);
+void commentEventIssues(vector<Event>& events);
+void checkEventIssues(const vector<Event>& events);
+// both
+void saveFeedbacks(const vector<Event>& events);
+void loadFeedbacks(vector<Event>& events);
 
-//user page
-void userMenu(const string& username,const string& phone, vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextEventID) {
+void userFeedbackMenu(const string& username, vector<Event>& events) {
     int choice;
     do {
-        cout << "\n===== User Page (" << username << ") =====\n";
-        cout << "1. Register Wedding Event\n";
-        cout << "2. Customize Food & Menu Packages\n";
-        cout << "3. Make Payment & Checkout\n";
-        cout << "4. View Receipt\n";
-        cout << "5. Logout\n";
+        cout << "\n+=================================================+\n";
+        cout << "|              Feedback Management                |\n";
+        cout << "+=================================================+\n";
+        cout << "| 1. Submit Feedback                              |\n";
+        cout << "| 2. View My Feedback & Reply                     |\n";
+        cout << "| 3. Delete Feedback                              |\n";
+        cout << "| 0. Back to Main Menu                            |\n";
+        cout << "+=================================================+\n";
 
-        //input validation
         while (true) {
             cout << "Enter your choice: ";
             if (cin >> choice) {
-                if (choice >= 1 && choice <= 5) {
+                if (choice >= 0 && choice <= 3) {
                     cin.ignore(numeric_limits<streamsize>::max(), '\n');
                     break;
-                } else {
-                    cout << "Invalid choice! Please enter a number between 1-5.\n";
+                }
+            } else {
+                cout << "Invalid input! Please enter a number.\n";
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            }
+        }
+        switch (choice) {
+            case 1:
+                submitFeedback(username, events);
+                saveFeedbacks(events);
+                break;
+            case 2:
+                viewFeedback(username, events);
+                break;
+            case 3:
+                deleteFeedback(username, events);
+                saveFeedbacks(events);
+                break;
+            case 0:
+                return;
+            default:
+                cout << "Invalid choice. Try again.\n";
+        }
+
+    } while (choice != 0);
+
+}
+void viewFeedback(const string& username, const vector<Event>& events) {
+
+    cout << "\n+=================================================+\n";
+    cout << "|               My Feedback & Reply               |\n";
+    cout << "+=================================================+\n";
+
+    bool foundEvent = false;
+    bool foundFeedback = false;
+
+    for (const Event &ev : events) {
+        if (ev.customer == username && ev.evstatus != "Canceled") {
+            foundEvent = true;
+            cout << "Event ID: " << ev.id << " | Theme: " << ev.theme << "\n";
+
+            bool hasValidFeedback = false;
+            for (const Feedback &fb : ev.feedbackList) {
+                if (fb.status != "Deleted") {
+                    hasValidFeedback = true;
+                    foundFeedback = true;
+                    cout << "Feedback ID: " << fb.feedbackId
+                         << "\nType: " << fb.type
+                         << "\nRating: " << fb.rating
+                         << "\nContent: " << fb.content << "\n"
+                         << "\n Status: " << fb.status << "\n";
+                    cout << " Reply from Staff: "
+                         << (fb.response.empty() ? "No reply yet." : fb.response)
+                         << endl;
+                    cout << "-------------------------------------\n";
+                }
+            }
+
+            if (!hasValidFeedback) {
+                cout << "No feedback yet.\n";
+            }
+        }
+    }
+
+    if (!foundEvent) {
+        cout << "You have no registered events.\n";
+    } else if (!foundFeedback) {
+        cout << "You have not submitted any feedback yet.\n";
+    }
+
+}
+void deleteFeedback(const string& username, vector<Event>& events) {
+
+    cout << "\n+=================================================+\n";
+    cout << "|               Delete My Feedback                |\n";
+    cout << "+=================================================+\n";
+
+    bool hasFeedback = false;
+    string chooseID;
+    for (Event &ev : events) {
+        if (ev.customer == username && ev.evstatus != "Canceled") {
+            for (Feedback &fb : ev.feedbackList) {
+                if (fb.status != "Deleted") {
+                    cout << "| Event ID: " << ev.id
+                     << " | Feedback ID: " << fb.feedbackId
+                     << " | Content: " << fb.content << " |" << endl;
+                    cout << "-------------------------------------------------------\n";
+                    chooseID = fb.feedbackId;
+                    hasFeedback = true;
+                }
+            }
+        }
+    }
+
+    if (!hasFeedback) {
+        cout << "You have no feedback to delete.\n";
+        return;
+    }
+
+    string choice;
+    cout << "Are you sure you want to delete the above feedbacks? (y/n): ";
+    getline(cin, choice);
+
+    if (choice == "N" || choice == "n") {
+        cout << "Cancelled.\n";
+
+    }else if (choice == "Y" || choice == "y") {
+
+        for (Event &ev : events) {
+            for (Feedback &fb : ev.feedbackList) {
+                if (ev.customer == username && fb.feedbackId == chooseID) {
+                    fb.status = "Deleted";
+                    cout << "Feedback ID " << ev.id << " deleted successfully.\n";
+                    return;
+                }
+            }
+        }
+    }else {
+        cout << "Invalid choice.\n";
+    }
+
+}
+void loadFeedbacks(vector<Event>& events) {
+    ifstream inFile("feedbacks.txt");
+    //if (!inFile) {
+    //    cout << "No feedbacks file found. Starting fresh.\n";
+    //return;
+    //}
+
+    string line;
+    while (getline(inFile, line)) {
+        if (line.empty()) continue;
+
+        stringstream ss(line);
+        string id, feedbackId, type, ratingStr, content, status, response;
+
+        getline(ss, id, '|');
+        int evId = stoi(id);
+        getline(ss, feedbackId, '|');
+        getline(ss, type, '|');
+        getline(ss, ratingStr, '|');
+        getline(ss, content, '|');
+        getline(ss, status, '|');
+        getline(ss, response, '|');
+
+        Feedback fb;
+        fb.feedbackId = feedbackId;
+        fb.type = type;
+        fb.rating = stoi(ratingStr);
+        fb.content = content;
+        fb.status = status;
+        fb.response = response;
+
+        for (Event &ev : events) {
+            if (ev.id == evId) {
+                ev.feedbackList.push_back(fb);
+                break;
+            }
+        }
+    }
+    inFile.close();
+}
+void saveFeedbacks(const vector<Event>& events) {
+    ofstream fout("feedbacks.txt");
+    if (!fout) {
+        cout << "Error saving feedbacks!\n";
+        return;
+    }
+
+    for (const Event& ev : events) {
+        for (const Feedback& fb : ev.feedbackList) {
+
+            fout << ev.id << "|"
+                    << fb.feedbackId << "|"
+                    << fb.type << "|"
+                    << fb.rating << "|"
+                    << fb.content << "|"
+                    << fb.status << "|"
+                    << fb.response << "\n";
+        }
+    }
+
+    fout.close();
+}
+void submitFeedback(const string& username, vector<Event>& events) {
+    cout << "\n+=================================================+\n";
+    cout << "|                 Submit Feedback                 |\n";
+    cout << "+=================================================+\n";
+
+    Event* userEvent = nullptr;
+    for (Event& ev : events) {
+        if (ev.customer == username && ev.evstatus != "Canceled") {
+            userEvent = &ev;
+            break;
+        }
+    }
+
+    if (!userEvent) {
+        cout << "No events found for your account.\n";
+        return;
+    }
+
+    // Check if feedback already exists
+    for (Feedback& fb : userEvent->feedbackList) {
+        if (fb.status != "Deleted") {
+            cout << "You have already submitted feedback for this event.\n";
+            return;
+        }
+    }
+
+    Feedback fb;
+    int nextId = userEvent->feedbackList.size() + 1;
+    stringstream ss;
+    ss << "FB" << setw(5) << setfill('0') << nextId;
+    fb.feedbackId = ss.str();
+    fb.status = "Pending";
+    fb.rating = 0;
+
+    cout << "\nSelect feedback type:\n";
+    cout << "1. Rating\n";
+    cout << "2. Complaint\n";
+    cout << "3. Suggestion\n";
+    cout << "Choice: ";
+    int typeChoice;
+    cin >> typeChoice;
+    cin.ignore();
+
+    if (typeChoice == 1) {
+        fb.type = "Rating";
+
+        cout << "\nEnter rating (1-5): ";
+        cin >> fb.rating;
+        cin.ignore();
+        while (fb.rating < 1 || fb.rating > 5) {
+            cout << "Invalid rating number. Please enter 1 - 5: ";
+            cin >> fb.rating;
+            cin.ignore();
+        }
+        cout << "Additional comments (Press enter to skip) : ";
+        getline(cin, fb.content);
+    } else if (typeChoice == 2) {
+        fb.type = "Complaint";
+        cout << "Describe complaint: ";
+        getline(cin, fb.content);
+    } else if (typeChoice == 3) {
+        fb.type = "Suggestion";
+        cout << "Enter suggestion: ";
+        getline(cin, fb.content);
+    } else {
+        cout << "Invalid type.\n";
+        return;
+    }
+
+    userEvent->feedbackList.push_back(fb);
+    cout << "Feedback submitted successfully!\n";
+}
+
+void staffFeedbackMenu(vector<Event>& events) {
+    int choice;
+    do {
+        cout << "\n--- Feedback Management ---\n";
+        cout << "1. Manage Feedback\n";
+        cout << "2. View All Feedback\n";
+        cout << "3. View Summarize Feedback\n";
+        cout << "0. Back\n";
+
+        while (true) {
+            cout << "Enter your choice: ";
+            if (cin >> choice) {
+                if (choice >= 0 && choice <= 3) {
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    break;
                 }
             } else {
                 cout << "Invalid input! Please enter a number.\n";
@@ -119,58 +427,492 @@ void userMenu(const string& username,const string& phone, vector<Event>& events,
 
         switch (choice) {
             case 1:
-                registerEvent(username,phone, events, menus, venues, nextEventID);
+                updateFeedbackStatus(events);
+                saveFeedbacks(events);
                 break;
             case 2:
-                {
-                    Event* userEvent = nullptr;
-                    for (auto& event : events) {
-                        if (event.customer == username) {
-                            userEvent = &event;
-                            break;
-                        }
-                    }
-                    if (userEvent) {
-                        customizeMenu(*userEvent, events, menus, nextMenuID);
-                    } else {
-                        cout << "No event found for this user. Please register an event first.\n";
-                    }
-                }
+                viewAllFeedback(events);
                 break;
             case 3:
-                makePayment(username,events);
+                viewSummarizeFeedback(events);
                 break;
-            case 4:
-                printReceipt(username,events);
+            case 0:
                 break;
-            case 5:
-                cout << "Logging out...\n";
-                break;
+            default:
+                cout << "Invalid choice. Try again.\n";
         }
-    } while (choice != 5);
+
+    } while (choice != 0);
+
+}
+void checkEventIssues(const vector<Event>& events) {
+
+    cout << "\n+=================================================+\n";
+    cout << "|               Event Issues / Notes              |\n";
+    cout << "+=================================================+\n";
+
+    bool found = false;
+
+    for (const Event& e : events) {
+        if (e.notes != "None" || e.issues != "N/A" ) {
+            found = true;
+            cout << "Event ID: " << e.id << "\n";
+            if (e.notes != "None") {
+                cout << "  Notes : " << e.notes << "\n";
+            }
+            if (e.issues != "N/A") {
+                cout << "  Issues: " << e.issues << "\n";
+            }
+            cout << "-------------------------------------\n";
+        }
+    }
+
+    if (!found) {
+        cout << "No events with notes or issues found.\n";
+    }
+}
+void viewAllEvents(const vector<Event>& events) {
+
+    cout << "\n+" << string(135, '=') << "+\n";
+    cout << "| " << setw(6) << left << "ID"
+         << " | " << setw(12) << left << "Customer"
+         << " | " << setw(15) << left << "Event Date"
+         << " | " << setw(13) << left << "Venue"
+         << " | " << setw(15) << left << "Location"
+         << " | " << setw(12) << left << "Guest"
+         << " | " << setw(13) << left << "Theme"
+         << " | " << setw(12) << left << "Status"
+         << " | " << setw(10) << right << "Total (RM)"
+         << " |\n";
+    cout << "+" << string(135, '=') << "+\n";
+
+    for (const Event& e : events) {
+        cout << "| " << setw(6) << left << e.id
+             << " | " << setw(12) << left << e.customer
+             << " | " << setw(15) << left << dateToString(e.date)
+             << " | " << setw(13) << left << e.venue.type
+             << " | " << setw(15) << left << e.venue.location
+             << " | " << setw(12) << left << e.guestCount
+             << " | " << setw(  13) << left << e.theme
+             << " | " << setw(12) << left << e.evstatus
+             << " | " << setw(10) << right << fixed << setprecision(2) << e.totalCost
+             << " |\n";
+    }
+    cout << "+" << string(135, '=') << "+\n";
+}
+void updateEventStatus(vector<Event>& events) {
+    if (events.empty()) {
+        cout << "No events available.\n";
+        return;
+    }
+
+    int id;
+    cout << "\nEnter Event ID to update status (or 0 to cancel): ";
+    cin >> id;
+    cin.ignore();
+
+    if (id == 0) {
+        cout << "Cancelled.\n";
+        return;
+    }
+
+    int index = -1;
+    for (int i = 0; i < events.size(); i++) {
+        if (events[i].id == id) {
+            index = i;
+            break;
+        }
+    }
+
+    if (index == -1) {
+        cout << "Event ID not found.\n";
+        return;
+    }
+
+    cout << "Select new status:\n";
+    cout << "1. Started\n";
+    cout << "2. Postponed\n";
+    cout << "3. Ended\n";
+    cout << "4. Canceled\n";
+    cout << "Choice: ";
+    int st;
+    cin >> st;
+    cin.ignore();
+
+    if (st == 1) {
+        events[index].evstatus = "Started";
+    } else if (st == 2) {
+        events[index].evstatus = "Postponed";
+    } else if (st == 3) {
+        events[index].evstatus = "Ended";
+    } else if (st == 4) {
+        events[index].evstatus = "Canceled";
+    } else {
+        cout << "Invalid option.\n";
+        return;
+    }
+    cout << "Event status updated to: " << events[index].evstatus << endl;
+}
+void commentEventIssues(vector<Event>& events) {
+    if (events.empty()) {
+        cout << "No events available.\n";
+        return;
+    }
+
+    int id;
+    cout << "\nEnter Event ID to comment on issues (or 0 to cancel): ";
+    cin >> id;
+    cin.ignore();
+
+    if (id == 0) {
+        cout << "Cancelled.\n";
+        return;
+    }
+
+    int index = -1;
+    for (int i = 0; i < events.size(); i++) {
+        if (events[i].id == id) {
+            index = i;
+            break;
+        }
+    }
+
+    if (index == -1) {
+        cout << "Event ID not found.\n";
+        return;
+    }
+
+    cout << "Enter comment on technical issues/problems: ";
+    string comment;
+    getline(cin, comment);
+
+    events[index].issues = comment;
+    cout << "Comment updated for Event ID " << id << ".\n";
+}
+void updateFeedbackStatus(vector<Event>& events) {
+    string searchType, searchStatus;
+
+    cout << "\n+==============================================================+\n";
+    cout << "|                        Manage Feedback                       |\n";
+    cout << "+==============================================================+\n";
+    cout << "Enter feedback TYPE to search (leave blank to skip)\n";
+    cout << "Options: Rating / Complaint / Suggestion\n> ";
+    getline(cin, searchType);
+
+    cout << "Enter feedback STATUS to filter (leave blank to skip)\n";
+    cout << "Options: Pending / In Progress / Resolved\n> ";
+    getline(cin, searchStatus);
+
+    bool found = false;
+    for (Event &ev : events) {
+        for (Feedback &fb : ev.feedbackList) {
+            bool matchType = searchType.empty() || fb.type.find(searchType) != string::npos;
+            bool matchStatus = searchStatus.empty() || fb.status.find(searchStatus) != string::npos;
+
+            if (matchType || matchStatus) {
+                if (fb.status != "Deleted") {
+                    cout << "\nFeedback ID: " << fb.feedbackId << endl;
+                    cout << "Type: " << fb.type << endl;
+                    cout << "Content: " << fb.content << endl;
+                    cout << "Status: " << fb.status << endl;
+                    cout << "Response: " << (fb.response.empty() ? "No response yet" : fb.response) << endl;
+                    cout << "-------------------------------------------------\n";
+                    found = true;
+                }
+            }
+        }
+    }
+
+    if (!found) {
+        cout << "No feedback matches your search criteria.\n";
+        return;
+    }
+
+    string feedbackId;
+    cout << "\nEnter Feedback ID to update (or 0 to cancel): ";
+    getline(cin, feedbackId);
+
+    if (feedbackId == "0") {
+        cout << "Cancelled.\n";
+        return;
+    }
+
+    for (Event &ev : events) {
+        for (Feedback &fb : ev.feedbackList) {
+            if (fb.feedbackId == feedbackId) {
+                cout << "Current Status: " << fb.status << "\n";
+
+                string newStatus;
+                while (true) {
+                    cout << "Enter new status (Resolved / leave blank = In Progress): ";
+                    getline(cin, newStatus);
+
+                    if (newStatus.empty()) {
+                        fb.status = "In Progress";
+                        cout << "No Update.\n";
+                        return;
+                    }
+
+                    string temp = newStatus;
+                    transform(temp.begin(), temp.end(), temp.begin(), ::tolower);
+
+                    if (temp == "resolved") {
+                        fb.status = "Resolved";
+                        break;
+                    } else {
+                        cout << "Invalid status. ";
+                    }
+                }
+
+                cout << "Enter response to customer (leave blank to skip): ";
+                string response;
+                getline(cin, response);
+                if (!response.empty()) fb.response = response;
+
+                cout << "Feedback updated successfully!\n";
+                return;
+            }
+        }
+    }
+
+
+    cout << "Feedback ID not found.\n";
 }
 
-//admin page
-void adminMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextVenueID) {
+void viewAllFeedback(const vector<Event>& events) {
+    cout << "\n+================= All Feedbacks =================+\n";
+
+    for (const Event& ev : events) {
+        stringstream ss;
+        ss << "EV" << setw(5) << setfill('0') << ev.id;
+        string eventId = ss.str();
+
+        cout << "Event ID: " << eventId << " | Customer: " << ev.customer << "\n";
+
+        if (ev.feedbackList.empty()) {
+            cout << "   No feedback yet.\n";
+        } else {
+            for (const Feedback& fb : ev.feedbackList) {
+                if (fb.status != "Deleted") {
+                    cout << "  [ID: " << fb.feedbackId
+                         << " | Type: " << fb.type
+                         << " | Rating: " << fb.rating
+                         << " | Status: " << fb.status
+                         << " | Content: " << fb.content << "]\n";
+                }
+            }
+        }
+
+        cout << "---------------------------------------------------\n";
+    }
+}
+
+void viewSummarizeFeedback(const vector<Event>& events) {
+    cout << "\n+================================================+\n";
+    cout << "|             Summarize All Feedbacks            |\n";
+    cout << "+================================================+\n";
+
+    if (events.empty()) {
+        cout << "No events available.\n";
+        return;
+    }
+
+    int totalRatingAll = 0, countRatingAll = 0;
+    int complaintsAll = 0, suggestionsAll = 0, othersAll = 0;
+    int pendingAll = 0, inProgressAll = 0, resolvedAll = 0;
+
+    for (const Event& ev : events) {
+        int totalRating = 0, countRating = 0;
+        int complaints = 0, suggestions = 0, others = 0;
+        int pending = 0, inProgress = 0, resolved = 0;
+
+        for (const Feedback& fb : ev.feedbackList) {
+            if (fb.status == "Deleted") continue;
+
+            if (fb.rating > 0) {
+                totalRating += fb.rating;
+                countRating++;
+                totalRatingAll += fb.rating;
+                countRatingAll++;
+            }
+
+            if (fb.type == "Complaint") { complaints++; complaintsAll++; }
+            else if (fb.type == "Suggestion") { suggestions++; suggestionsAll++; }
+            else { others++; othersAll++; }
+
+            if (fb.status == "Pending") { pending++; pendingAll++; }
+            else if (fb.status == "In Progress") { inProgress++; inProgressAll++; }
+            else if (fb.status == "Resolved") { resolved++; resolvedAll++; }
+        }
+    }
+
+    cout << "\n========= Overall Summary (All Events) =========\n";
+    if (countRatingAll > 0) {
+        double avgAll = (double)totalRatingAll / countRatingAll;
+        cout << "\n Overall Average Rating: " << fixed << setprecision(2) << avgAll << endl;
+    } else {
+        cout << "\n Overall Average Rating: N/A (No feedback yet)\n";
+    }
+
+    cout << "\nTotal Complaints   : " << complaintsAll << endl;
+    cout << "Total Suggestions  : " << suggestionsAll << endl;
+    cout << "Total Others       : " << othersAll << endl;
+
+    cout << "\nTotal Pending      : " << pendingAll << endl;
+    cout << "Total In Progress  : " << inProgressAll << endl;
+    cout << "Total Resolved     : " << resolvedAll << endl << "\n";
+    cout << "=================================================\n";
+}
+void generateEventReport(const vector<Event>& events) {
+    cout << "\n+===================================================+\n";
+    cout << "|                    Event Report                   |\n";
+    cout << "+===================================================+\n";
+
+    if (events.empty()) {
+        cout << "No events available to report.\n";
+        return;
+    }
+
+    int totalEvents = 0;
+    int started = 0, postponed = 0, ended = 0, canceled = 0;
+    double totalRevenue = 0.0;
+    int totalGuests = 0;
+    double maxCost = 0.0, minCost = 1e9;
+    int totalFeedbacks = 0, complaints = 0, suggestions = 0;
+
+    for (const Event& ev : events) {
+        totalEvents++;
+
+        if (ev.evstatus == "Started") started++;
+        else if (ev.evstatus == "Postponed") postponed++;
+        else if (ev.evstatus == "Ended") ended++;
+        else if (ev.evstatus == "Canceled") canceled++;
+
+        if (ev.isPaid && ev.evstatus != "Canceled") {
+            totalRevenue += ev.totalCost;
+        }
+
+        totalGuests += ev.guestCount;
+
+        if (ev.totalCost > maxCost) maxCost = ev.totalCost;
+        if (ev.totalCost < minCost) minCost = ev.totalCost;
+
+        totalFeedbacks += ev.feedbackList.size();
+        for (const Feedback& fb : ev.feedbackList) {
+            if (fb.type == "Complaint") complaints++;
+            else if (fb.type == "Suggestion") suggestions++;
+        }
+    }
+
+    double avgGuests = (totalEvents > 0) ? (double)totalGuests / totalEvents : 0.0;
+    double avgCostPerGuest = (totalGuests > 0) ? totalRevenue / totalGuests : 0.0;
+
+    cout << left << setw(30) << "Total Events:" << right << setw(22) << totalEvents << "\n";
+    cout << left << setw(30) << "   Started:" << right << setw(22) << started << "\n";
+    cout << left << setw(30) << "   Postponed:" << right << setw(22) << postponed << "\n";
+    cout << left << setw(30) << "   Ended:" << right << setw(22) << ended << "\n";
+    cout << left << setw(30) << "   Canceled:" << right << setw(22) << canceled << "\n";
+    cout << "-----------------------------------------------------\n";
+    cout << left << setw(30) << "Total Revenue (RM):" << right << setw(22) << fixed << setprecision(2) << totalRevenue << "\n";
+    cout << left << setw(30) << "Avg Revenue per Guest (RM):" << right << setw(22) << avgCostPerGuest << "\n";
+    cout << "----------------------------------------------------\n";
+    cout << left << setw(30) << "Total Guests:" << right << setw(22) << totalGuests << "\n";
+    cout << left << setw(30) << "Avg Guests per Event:" << right << setw(22) << avgGuests << "\n";
+    cout << left << setw(30) << "Highest Event Cost (RM):" << right << setw(22) << maxCost << "\n";
+    cout << left << setw(30) << "Lowest Event Cost (RM):" << right << setw(22) << minCost << "\n";
+    cout << "+===================================================+\n";
+}
+void generateMonthlyEventReport(const vector<Event>& events) {
+    cout << "\n+================================================+\n";
+    cout << "|               Monthly Event Report             |\n";
+    cout << "+================================================+\n";
+
+    if (events.empty()) {
+        cout << "No events available.\n";
+        return;
+    }
+
+    int month, year;
+    cout << "Enter month (1-12): ";
+    cin >> month;
+    cout << "Enter year: ";
+    cin >> year;
+    cin.ignore();
+
+    int totalEvents = 0;
+    int started = 0, postponed = 0, ended = 0, canceled = 0;
+    double totalRevenue = 0.0;
+
+    for (const Event& ev : events) {
+        if (ev.date.month == month && ev.date.year == year) {
+            totalEvents++;
+
+            if (ev.evstatus == "Started") started++;
+            else if (ev.evstatus == "Postponed") postponed++;
+            else if (ev.evstatus == "Ended") ended++;
+            else if (ev.evstatus == "Canceled") canceled++;
+
+            if (ev.isPaid && ev.evstatus != "Canceled") {
+                totalRevenue += ev.totalCost;
+            }
+        }
+    }
+
+    if (totalEvents == 0) {
+        cout << "No events found for " << month << "/" << year << ".\n";
+        return;
+    }
+
+    cout << "\nReport for " << month << "/" << year << ":\n";
+    cout << "-------------------------------------------------\n";
+    cout << "Total Events: " << totalEvents << "\n";
+    cout << "   Started:    " << started << "\n";
+    cout << "   Postponed:  " << postponed << "\n";
+    cout << "   Ended:      " << ended << "\n";
+    cout << "   Canceled:   " << canceled << "\n";
+    cout << "-------------------------------------------------\n";
+    cout << "Total Revenue (only paid & non-canceled): RM " << totalRevenue << "\n";
+    cout << "-------------------------------------------------\n";
+
+    cout << "\n Event Details:\n\n";
+    cout << left << setw(11) << "Event ID"
+         << setw(15) << "Customer"
+         << setw(15) << "Date"
+         << setw(12) << "Status"
+         << setw(8)  << "Paid"
+         << right << setw(12) << "Cost (RM)"
+         << "\n";
+
+    cout << string(73, '-') << "\n";
+
+    for (const Event& ev : events) {
+        if (ev.date.month == month && ev.date.year == year) {
+            cout << left << setw(11) << ev.id
+                 << setw(15) << ev.customer
+                 << setw(15) << dateToString(ev.date)
+                 << setw(12) << ev.evstatus
+                 << setw(8)  << (ev.isPaid ? "Yes" : "No")
+                 << right << setw(12) << fixed << setprecision(2) << ev.totalCost
+                 << "\n";
+        }
+
+    }
+}
+
+void venueMenu(vector<Venue>& venues, int& nextVenueID) {
     int choice;
     do {
-        cout << "\n===== Organizer Page (Admin) =====\n";
-        cout << "1. Venue Management\n";
-        cout << "2. Menu Management\n";
-        cout << "3. Event Management\n";
-        cout << "4. \n";
-        cout << "5. View menus\n";
-        cout << "6. Logout\n";
+        cout << "\n--- Venue Management ---\n";
+        cout << "1. Create Venue\n";
+        cout << "2. View Venues\n";
+        cout << "0. Back\n";
 
-        //input validation
         while (true) {
             cout << "Enter your choice: ";
             if (cin >> choice) {
-                if (choice >= 1 && choice <= 6) {
+                if (choice >= 0 && choice <= 2) {
                     cin.ignore(numeric_limits<streamsize>::max(), '\n');
                     break;
-                } else {
-                    cout << "Invalid choice! Please enter a number between 1-6.\n";
                 }
             } else {
                 cout << "Invalid input! Please enter a number.\n";
@@ -184,31 +926,231 @@ void adminMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues
                 createVenue(venues, nextVenueID);
                 break;
             case 2:
-                createMenu(menus, nextMenuID);
-                break;
-            case 3:
-                retrieveEvents(events);
-                cout << "Press Enter to return to Admin Menu...";
-                cin.get();
-                break;
-            case 4:
                 viewVenues(venues);
                 cout << "Press Enter to return to Admin Menu...";
                 cin.get();
                 break;
-            case 5:
+            case 0:
+                break;
+            default:
+                cout << "Invalid choice.\n";
+        }
+    } while (choice != 0);
+}
+void menuMenu(vector<Menu>& menus, int& nextMenuID) {
+    int choice;
+    do {
+        cout << "\n--- Menu Management ---\n";
+        cout << "1. Create Menu\n";
+        cout << "2. View Menus\n";
+        cout << "0. Back\n";
+        while (true) {
+            cout << "Enter your choice: ";
+            if (cin >> choice) {
+                if (choice >= 0 && choice <= 2) {
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    break;
+                }
+            } else {
+                cout << "Invalid input! Please enter a number.\n";
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            }
+        }
+
+        switch (choice) {
+            case 1:
+                createMenu(menus, nextMenuID);
+                break;
+            case 2:
                 viewMenus(menus);
                 cout << "Press Enter to return to Admin Menu...";
                 cin.get();
                 break;
-            case 6:
-                cout << "Logging out...\n";
+            case 0:
                 break;
+            default:
+                cout << "Invalid choice.\n";
         }
-    } while (choice != 6);
+    } while (choice != 0);
+}
+void eventMenu(vector<Event>& events) {
+    int choice;
+    do {
+        cout << "\n--- Event Management ---\n";
+        cout << "1. View All Events\n";
+        cout << "2. Update Event Status\n";
+        cout << "3. Comment on Technical Issues/Problems\n";
+        cout << "4. View Event Notes or Issues\n";
+        cout << "0. Back\n";
+
+        while (true) {
+            cout << "Enter your choice: ";
+            if (cin >> choice) {
+                if (choice >= 0 && choice <= 4) {
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    break;
+                }
+            } else {
+                cout << "Invalid input! Please enter a number.\n";
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            }
+        }
+        switch (choice) {
+            case 1:
+                viewAllEvents(events);
+                break;
+            case 2:
+                updateEventStatus(events);
+                saveDataToFile(events);
+                break;
+            case 3:
+                commentEventIssues(events);
+                saveDataToFile(events);
+                break;
+            case 4:
+                checkEventIssues(events);
+                break;
+            case 0:
+                break;
+            default:
+                cout << "Invalid choice.\n";
+        }
+    } while (choice != 0);
+}
+void reportMenu(const vector<Event>& events) {
+    int choice;
+    do {
+        cout << "\n--- Reports ---\n";
+        cout << "1. Generate Event Report\n";
+        cout << "2. Generate Monthly Event Report\n";
+        cout << "0. Back\n";
+
+        while (true) {
+            cout << "Enter your choice: ";
+            if (cin >> choice) {
+                if (choice >= 0 && choice <= 2) {
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    break;
+                }
+            } else {
+                cout << "Invalid input! Please enter a number.\n";
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            }
+        }
+
+        switch (choice) {
+            case 1:
+                generateEventReport(events);
+                break;
+            case 2:
+                generateMonthlyEventReport(events);
+                break;
+            case 0:
+                break;
+            default:
+                cout << "Invalid choice.\n";
+        }
+    } while (choice != 0);
 }
 
-//user register acc
+
+void userMenu(const string& username,const string& phone, vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextEventID) {
+    int choice;
+    do {
+        cout << "\n===== User Page (" << username << ") =====\n";
+        cout << "1. Register Wedding Event\n";
+        cout << "2. My Feedback\n";
+        cout << "3. View Receipt\n";
+        cout << "0. Logout\n";
+
+        //input validation
+        while (true) {
+            cout << "Enter your choice: ";
+            if (cin >> choice) {
+                if (choice >= 0 && choice <= 5) {
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    break;
+                }
+            } else {
+                cout << "Invalid input! Please enter a number.\n";
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            }
+        }
+
+        switch (choice) {
+            case 1:
+                registerEvent(username,phone, events, menus, venues, nextEventID);
+                break;
+            case 2:
+                userFeedbackMenu(username,events);
+                break;
+            case 3:
+                printReceipt(username,events);
+                break;
+            case 0:
+                cout << "Logging out...\n";
+                break;
+            default:
+                cout << "Invalid choice! Please enter a number between 1-5.\n";
+
+        }
+    } while (choice != 0);
+}
+void adminMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextVenueID) {
+    int choice;
+    do {
+
+        cout << "\n===== Organizer Page (Admin) =====\n";
+        cout << "1. Venue Management\n";
+        cout << "2. Menu Management\n";
+        cout << "3. Event Management\n";
+        cout << "4. Feedback Management\n";
+        cout << "5. Reports\n";
+        cout << "0. Logout\n";
+
+        //input validation
+        while (true) {
+            cout << "Enter your choice: ";
+            if (cin >> choice) {
+                if (choice >= 0 && choice <= 5) {
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    break;
+                }
+            } else {
+                cout << "Invalid input! Please enter a number.\n";
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            }
+        }
+
+        switch (choice) {
+            case 1:
+                venueMenu(venues, nextVenueID);
+                break;
+            case 2:
+                menuMenu(menus, nextMenuID);
+                break;
+            case 3:
+                eventMenu(events);
+                break;
+            case 4:
+                staffFeedbackMenu(events);
+                break;
+            case 5:
+                reportMenu(events);
+                break;
+            case 0:
+                cout << "Logging out...\n";
+                break;
+            default:
+                cout << "Invalid input! Please enter a number between 1 - 6.\n";
+        }
+    } while (choice != 0);
+}
 void registerUser() {
     User newUser;
     cout << "---- Register New User (Enter 0 to go back) ----\n";
@@ -477,8 +1419,6 @@ double calculateTotalCost(const Event &e) {
     double menuCost = (e.menu.id != 0) ? (e.menu.price * tables) : 0.0;
     return e.venue.price + menuCost;
 }
-
-
 // Save all events to file
 void saveDataToFile(const vector<Event>& events) {
     ofstream file("data.txt");
@@ -499,8 +1439,9 @@ void saveDataToFile(const vector<Event>& events) {
              << e.venue.timeslot << ";"
              << e.guestCount << ";"
              << e.theme << ";"
-             << e.notes << ";";
-
+             << e.notes << ";"
+             << e.evstatus << ";"
+             << e.issues <<";";
         // Menu
         file << e.menu.id << ";"
              << e.menu.cuisine << ";"
@@ -529,14 +1470,9 @@ void saveDataToFile(const vector<Event>& events) {
     file.close();
     cout << "Events saved successfully.\n";
 }
-
 // Load all events from file
 void loadDataFromFile(vector<Event>& events,int& nextEventI) {
     ifstream file("data.txt");
-    if (!file.is_open()) {
-        cout << "No existing data file found. Starting fresh.\n";
-        return;
-    }
 
     events.clear();
     string line;
@@ -553,7 +1489,7 @@ void loadDataFromFile(vector<Event>& events,int& nextEventI) {
             tokens.push_back(token);
         }
 
-        if (tokens.size() < 18) {
+        if (tokens.size() < 23) {
             cout << "Invalid event format: " << line << endl;
             continue;
         }
@@ -573,6 +1509,8 @@ void loadDataFromFile(vector<Event>& events,int& nextEventI) {
         e.guestCount = stoi(tokens[index++]);
         e.theme = tokens[index++];
         e.notes = tokens[index++];
+        e.evstatus = tokens[index++];
+        e.issues = tokens[index++];
 
         //menu
         e.menu.id = stoi(tokens[index++]);
@@ -618,7 +1556,6 @@ void loadDataFromFile(vector<Event>& events,int& nextEventI) {
         }
         e.paymentMethod = tokens[index++];
 
-
         if (e.id >= nextEventI) {
             nextEventI = e.id + 1;
         }
@@ -627,8 +1564,6 @@ void loadDataFromFile(vector<Event>& events,int& nextEventI) {
     }
 
     file.close();
-    cout << "Events loaded successfully. " << events.size() << " events available.\n";
-
 }
 
 void saveMenuToFile(const vector<Menu>& menus) {
@@ -655,14 +1590,8 @@ void saveMenuToFile(const vector<Menu>& menus) {
     cout << "Menus saved successfully.\n";
 }
 
-
-
 void loadMenuFromFile(vector<Menu>& menus, int& nextMenuID) {
     ifstream file("menus.txt");
-    if (!file.is_open()) {
-        cout << "No existing menus file found. Starting fresh.\n";
-        return;
-    }
 
     menus.clear();
     string line;
@@ -711,11 +1640,8 @@ void loadMenuFromFile(vector<Menu>& menus, int& nextMenuID) {
 
         menus.push_back(m);
     }
-
     file.close();
-    cout << "Menus loaded successfully. " << menus.size() << " menus available.\n";
 }
-
 
 void saveVenueToFile(const vector<Venue>& venues) {
     ofstream file("venues.txt");
@@ -737,13 +1663,8 @@ void saveVenueToFile(const vector<Venue>& venues) {
     cout << "Venues saved successfully.\n";
 }
 
-
 void loadVenueFromFile(vector<Venue>& venues, int& nextVenueID) {
     ifstream file("venues.txt");
-    if (!file.is_open()) {
-        cout << "No existing venues file found.\n";
-        return;
-    }
 
     venues.clear();
     string line;
@@ -769,18 +1690,13 @@ void loadVenueFromFile(vector<Venue>& venues, int& nextVenueID) {
             cout << "Error: invalid number in venue line -> " << line << endl;
             continue;
         }
-
         venues.push_back(v);
         if (v.id >= nextVenueID) nextVenueID = v.id + 1;
     }
-
     file.close();
-    cout << "Venues loaded successfully. " << venues.size() << " venues available.\n";
 }
 
-
-
-void registerEvent(const string& username,const string& phone, vector<Event>& events, const vector<Menu>& menus, const vector<Venue>& venues,int& nextEventID) {
+void registerEvent(const string& username,const string& phone, vector<Event>& events,vector<Menu>& menus, const vector<Venue>& venues,int& nextEventID) {
     Event e;
     e.id = nextEventID++;
     e.customer = username;
@@ -1036,32 +1952,20 @@ void registerEvent(const string& username,const string& phone, vector<Event>& ev
         e.notes = "None";
     }
 
-    //summary
-    cout << "\n========== Event Summary ==========\n";
-    cout << left << setw(15) << "Venue:"     << e.venue.type << endl;
-    cout << left << setw(15) << "Location:"  << e.venue.location << endl;
-    cout << left << setw(15) << "Timeslot:"  << e.venue.timeslot << endl;
-    cout << left << setw(15) << "Guests:"    << e.guestCount << endl;
-    cout << left << setw(15) << "Theme:"     << e.theme << endl;
-    cout << left << setw(15) << "Notes:"     << e.notes << endl;
-    cout << "===================================\n";
+    e.evstatus = "Planned";
+    e.issues = "N/A";
 
     //ask confirmation
     string input;
     char confirm;
     while (true) {
-        cout << "\nConfirm event registration? (y/n, 0=Cancel): ";
+        cout << "\nConfirm event registration? (y/n): ";
         getline(cin, input);
         trim(input);
 
         if (input.empty()) {
             cout << "Input cannot be empty! Please enter 'y', 'n'.\n";
             continue;
-        }
-
-        if (input == "0") {
-            cout << "Event registration cancelled.\n";
-            return;
         }
 
         if (input == "y" || input == "Y" || input == "n" || input == "N") {
@@ -1072,80 +1976,24 @@ void registerEvent(const string& username,const string& phone, vector<Event>& ev
     }
 
     if (confirm == 'y' || confirm == 'Y') {
-        events.push_back(e);
-        saveDataToFile(events);
-        cout << "Event created successfully.\n";
-    } else {
-        cout << "Event registration cancelled.\n";
-    }
-}
-
-void retrieveEvents(const vector<Event>& events) {
-    if (events.empty()) {
-        cout << "No events found.\n";
-        return;
-    }
-
-    //registered event
-    cout << "\n--- Available Events ---\n";
-    for (int i = 0; i < events.size(); i++) {
-        cout << "=====================================\n";
-        cout << left << setw(18) << "Event ID:"      << events[i].id << "\n";
-        cout << left << setw(18) << "Customer:"      << events[i].customer << "\n";
-        cout << left << setw(18) << "Phone:"         << events[i].phone << "\n";
-        cout << left << setw(18) << "Date:"          << dateToString(events[i].date) << "\n";
-        cout << left << setw(18) << "Venue:"         << events[i].venue.type << "\n";
-        cout << left << setw(18) << "Location:"      << events[i].venue.location << "\n";
-        cout << left << setw(18) << "Capacity:"      << events[i].venue.capacity << "\n";
-        cout << left << setw(18) << "Time Slot:"     << events[i].venue.timeslot << "\n";
-        cout << left << setw(18) << "Guests:"        << events[i].guestCount << "\n";
-        cout << left << setw(18) << "Theme:"         << events[i].theme << "\n";
-        cout << left << setw(18) << "Notes:"        << events[i].notes << "\n";
-        cout << left << setw(18) << "Venue Price:" << events[i].venue.price << "\n";
-
-        //menu
-        if (events[i].menu.cuisine.empty()) {
-            cout << left << setw(18) << "Menu:" << "Not customized yet\n";
-        } else {
-            cout << "\n----- Menu Details -----\n";
-            cout << left << setw(18) << "Cuisine:"    << events[i].menu.cuisine << "\n";
-            cout << left << setw(18) << "Serving Style:" << events[i].menu.servingStyle << "\n";
-            cout << left << setw(18) << "Menu Price:" << "RM " << events[i].menu.price << "\n";
-
-            // Food items with wrapping
-            cout << left << setw(18) << "Food Items:";
-            if (!events[i].menu.foodItems.empty()) {
-                for (int j = 0; j < events[i].menu.foodItems.size(); j++) {
-                    cout << events[i].menu.foodItems[j];
-                    if (j < events[i].menu.foodItems.size() - 1) cout << ", ";
-
-                    // wrap after every 3 items
-                    if ((j + 1) % 3 == 0 && j < events[i].menu.foodItems.size() - 1) {
-                        cout << "\n" << setw(18) << " ";
-                    }
-                }
-                cout << "\n";
-            } else {
-                cout << "None\n";
-            }
-
-            // Customizations (if any)
-            if (!events[i].customizations.empty()) {
-                cout << left << setw(18) << "Customizations:";
-                cout << events[i].customizations[0] << "\n";
-                for (int j = 1; j < events[i].customizations.size(); j++) {
-                    cout << setw(18) << " " << events[i].customizations[j] << "\n";
-                }
-            }
+        int nextMenuID = 0;
+        if (!customizeMenu(e, events, const_cast<vector<Menu>&>(menus), nextMenuID)) {
+            cout << "Customization cancelled. Event not saved.\n";
+            return;
         }
 
-        //payment
-        cout << "\n----- Payment Details -----\n";
-        double total = calculateTotalCost(events[i]);
-        cout << left << setw(18) << "Total Cost:" << "RM " << total << "\n";
-        cout << left << setw(18) << "Status:"     << (events[i].isPaid ? "PAID" : "PENDING") << "\n";
+        if (!makePayment(e)) {
+            cout << "Payment cancelled. Event not saved.\n";
+            return;
+        }
 
-        cout << "=====================================\n";
+        events.push_back(e);
+        saveDataToFile(events);
+        cout << "Press enter to back to main menu....";
+        cin.get();
+        return;
+    }else {
+        cout << "Event registration cancelled.\n";
     }
 }
 
@@ -1228,8 +2076,6 @@ void createMenu(vector<Menu>& menus, int& nextMenuID) {
             cout << "Price must be at least RM200! Please try again.\n";
         }
     }
-
-
     // Confirmation
     char confirm;
     while (true) {
@@ -1253,42 +2099,48 @@ void createMenu(vector<Menu>& menus, int& nextMenuID) {
     }
 }
 
-
 void viewMenus(const vector<Menu>& menus) {
     if (menus.empty()) {
         cout << "No menus available.\n";
         return;
     }
 
-    cout << "\n--- Available Menus ---\n";
-    for (int i = 0; i < menus.size(); i++) {
-        cout << "Menu: " << menus[i].id << "\n";
-        cout << "Cuisine: " << menus[i].cuisine << "\n";
-        cout << "Price per table (10 people): RM" << menus[i].price << "\n";
+    cout << "\n========================================\n";
+    cout << "              Menu Listings              \n";
+    cout << "========================================\n";
+
+    for (const auto& m : menus) {
+        cout << "Menu ID   : " << m.id << "\n";
+        cout << "Cuisine   : " << m.cuisine << "\n";
+        cout << "Price     : RM" << fixed << setprecision(2) << m.price
+             << " per table (10 pax)\n";
         cout << "Food Items: ";
-        for (int j = 0; j < menus[i].foodItems.size(); j++) {
-            cout << menus[i].foodItems[j];
-            if (j < menus[i].foodItems.size() - 1) cout << ", ";
+        for (size_t j = 0; j < m.foodItems.size(); j++) {
+            cout << m.foodItems[j];
+            if (j < m.foodItems.size() - 1) cout << ", ";
         }
-        cout << "\n\n";
+        cout << "\n----------------------------------------\n";
     }
 }
 
-void customizeMenu(Event& e, vector<Event>& events, vector<Menu>& menus, int& nextMenuID) {
+
+bool customizeMenu(Event& e, vector<Event>& events, vector<Menu>& menus, int& nextMenuID) {
     if (menus.empty()) {
         cout << "No menus available. Please ask admin to create a menu first.\n";
-        return;
+        return false;
     }
-
-    cout << "\nAvailable Menus:\n";
+    cout << "Please select a menu package for your event from the options below:\n";
+    cout << "\n========== Available Menus ==========\n";
     for (int i = 0; i < menus.size(); i++) {
-        cout << i + 1 << ". " << menus[i].cuisine << " (RM" << menus[i].price << " per table)\n";
-        cout << "   Food Items: ";
+        cout << "[" << i + 1 << "] "
+             << menus[i].cuisine << " (RM" << menus[i].price << " per table)\n";
+
+        cout << "     Food Items: ";
         for (int j = 0; j < menus[i].foodItems.size(); j++) {
             cout << menus[i].foodItems[j];
             if (j < menus[i].foodItems.size() - 1) cout << ", ";
         }
-        cout << "\n\n";
+        cout << "\n--------------------------------------\n";
     }
 
     // Menu choice validation
@@ -1311,7 +2163,7 @@ void customizeMenu(Event& e, vector<Event>& events, vector<Menu>& menus, int& ne
 
     if (menuChoice == 0) {
         cout << "Menu selection cancelled.\n";
-        return;
+        return false;
     }
 
     e.menu = menus[menuChoice - 1];
@@ -1371,68 +2223,25 @@ void customizeMenu(Event& e, vector<Event>& events, vector<Menu>& menus, int& ne
     }
 
     if (confirm == 'y' || confirm == 'Y') {
-        saveDataToFile(events);
         cout << "Menu customized successfully!\n";
+        return true;
     } else {
         cout << "Menu customization cancelled.\n";
+        return false;
     }
 }
 
-void makePayment(const string &username, vector<Event> &events) {
-    Event* userEvent = nullptr;
-    for (auto &e : events) {
-        if (e.customer == username) {
-            userEvent = &e;
-            break;
-        }
-    }
-
-    if (!userEvent) {
-        cout << "You have no events to pay. Please register an event...\n";
-        cin.get();
-        return;
-    }
-
-    Event &e = *userEvent;
-    if (e.isPaid) {
-        cout << "You already paid for this event. Here is your event summary : \n";
-        cout << "\n============= Event Summary =============\n";
-        cout << left << setw(19) << "Event ID:"      << e.id << "\n";
-        cout << left << setw(19) << "Customer:"            << e.customer << "\n";
-        cout << left << setw(19) << "Venue:"               << e.venue.type << "\n";
-        cout << left << setw(19) << "Date:"                << dateToString(e.date) << "\n";
-        cout << left << setw(19) << "Guests:"              << e.guestCount << "\n";
-        cout << left << setw(19) << "Cuisine:"                << e.menu.cuisine << "\n";
-        cout << left << setw(19) << "Serving Style:"          << e.menu.servingStyle << "\n";
-        cout << left << setw(19) << "Menu Items:";
-        if (!e.menu.foodItems.empty()) {
-            for (size_t i = 0; i < e.menu.foodItems.size(); ++i) {
-                cout << e.menu.foodItems[i];
-                if (i < e.menu.foodItems.size() - 1) cout << ", ";
-            }
-        } else {
-            cout << "None";
-        }
-        cout << "\n";
-        cout << left << setw(19) << "Custom Notes:"           << (e.notes.empty() ? "-" : e.notes) << "\n";
-        cout << left << setw(19) << "Total Amount (RM):"      << fixed << setprecision(2) << e.totalCost << "\n";
-        cout << left << setw(19) << "Paid:"                   << (e.isPaid ? "Yes" : "No") << "\n";
-        cout << "========================================\n";
-
-        cout << "Press enter to back to user page...";
-        cin.get();
-        return;
-    }
-
+bool makePayment(Event &e) {
     //summary
+    cout << "\nHere is your event summary. Please review the details carefully before proceeding to payment.";
     cout << "\n============= Event Summary =============\n";
     cout << left << setw(18) << "Event ID:"      << e.id << "\n";
-    cout << left << setw(18) << "Customer:"            << e.customer << "\n";
-    cout << left << setw(18) << "Venue:"               << e.venue.type << "\n";
-    cout << left << setw(18) << "Date:"                << dateToString(e.date) << "\n";
-    cout << left << setw(18) << "Guests:"              << e.guestCount << "\n";
-    cout << left << setw(18) << "Cuisine:"                << e.menu.cuisine << "\n";
-    cout << left << setw(18) << "Serving Style:"          << e.menu.servingStyle << "\n";
+    cout << left << setw(18) << "Customer:"      << e.customer << "\n";
+    cout << left << setw(18) << "Venue:"         << e.venue.type << "\n";
+    cout << left << setw(18) << "Date:"          << dateToString(e.date) << "\n";
+    cout << left << setw(18) << "Guests:"        << e.guestCount << "\n";
+    cout << left << setw(18) << "Cuisine:"       << e.menu.cuisine << "\n";
+    cout << left << setw(18) << "Serving Style:" << e.menu.servingStyle << "\n";
     cout << left << setw(18) << "Menu Items:";
     if (!e.menu.foodItems.empty()) {
         for (size_t i = 0; i < e.menu.foodItems.size(); ++i) {
@@ -1443,9 +2252,8 @@ void makePayment(const string &username, vector<Event> &events) {
         cout << "None";
     }
     cout << "\n";
-    cout << left << setw(18) << "Custom Notes:"           << (e.notes.empty() ? "-" : e.notes) << "\n";
-    cout << left << setw(18) << "Total Amount (RM):"      << fixed << setprecision(2) << e.totalCost << "\n";
-    cout << left << setw(18) << "Paid:"                   << (e.isPaid ? "Yes" : "No") << "\n";
+    cout << left << setw(18) << "Custom Notes:"      << (e.notes.empty() ? "-" : e.notes) << "\n";
+    cout << left << setw(18) << "Total Amount (RM):" << fixed << setprecision(2) << e.totalCost << "\n";
     cout << "========================================\n";
 
     char confirm;
@@ -1454,7 +2262,7 @@ void makePayment(const string &username, vector<Event> &events) {
     cin.ignore();
     if (tolower(confirm) != 'y') {
         cout << "Payment cancelled.\n";
-        return;
+        return false;
     }
 
     cout << "\n--- Payment ---\n";
@@ -1552,10 +2360,9 @@ void makePayment(const string &username, vector<Event> &events) {
                     cout << "Invalid bank name! It cannot contain numbers.\n";
                     continue;
                 }
-                break; // bank name is valid
+                break;
             }
 
-            // Second: get and validate reference number
             while (true) {
                 cout << "Enter Transaction Reference Number: ";
                 getline(cin, refNo);
@@ -1573,21 +2380,24 @@ void makePayment(const string &username, vector<Event> &events) {
                     cout << "Reference number must be at least 10 digits!\n";
                     continue;
                 }
-                break; // reference number is valid
+                break;
             }
-            break; // exit payment method choice
+            break;
+
         } else {
             cout << "Invalid choice! Please enter 1, 2, or 3.\n";
         }
     }
 
     e.isPaid = true;
+    e.evstatus = "Confirmed";
     cout << "\nPayment successful via " << e.paymentMethod << "!\n";
-    saveDataToFile(events);
+    return true;
 }
 
+
 void printReceipt(const string &username, const vector<Event> &events) {
-    // Find the user's event
+    //find event
     const Event* userEvent = nullptr;
     for (const auto &e : events) {
         if (e.customer == username) {
@@ -1745,20 +2555,33 @@ void createVenue(vector<Venue>& venues,int& nextVenueID) {
 }
 
 void viewVenues(const vector<Venue>& venues) {
-    cout << "\n=== Available Venues ===\n";
+    cout << "\n========================================\n";
+    cout << "         List of Available Venues       \n";
+    cout << "========================================\n";
+
     if (venues.empty()) {
         cout << "No venues available.\n";
         return;
     }
 
+    cout << left << setw(8)  << "ID"
+         << setw(20) << "Type"
+         << setw(20) << "Location"
+         << setw(15) << "Capacity"
+         << setw(15) << "Price (RM)" << "\n";
+
+    cout << string(70, '=') << "\n";
+
     for (const auto& v : venues) {
-        cout << " | Venue ID: " << v.id
-             << " | Venue Type :  " << v.type
-             << " | Location: " << v.location
-             << " | Capacity: " << v.capacity
-             << " | Price: RM" << v.price
+        cout << left << setw(8)  << v.id
+             << setw(20) << v.type
+             << setw(20) << v.location
+             << setw(15) << v.capacity
+             << setw(15) << fixed << setprecision(2) << v.price
              << "\n";
     }
+
+    cout << string(70, '=') << "\n";
 }
 
 void mainMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextEventID,int& nextVenueID) {
@@ -1767,16 +2590,14 @@ void mainMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues,
         cout << "\n===== Wedding Event Management System =====\n";
         cout << "1. Register\n";
         cout << "2. Login\n";
-        cout << "3. Exit\n";
+        cout << "0. Exit\n";
 
         while (true) {
             cout << "Enter your choice: ";
             if (cin >> choice) {
-                if (choice >= 1 && choice <= 3) {
+                if (choice >= 0 && choice <= 2) {
                     cin.ignore(numeric_limits<streamsize>::max(), '\n');
                     break;
-                } else {
-                    cout << "Invalid choice! Please enter a number between 1-3.\n";
                 }
             } else {
                 cout << "Invalid input! Please enter a number.\n";
@@ -1786,16 +2607,19 @@ void mainMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues,
         }
 
         switch (choice) {
-            case 1: registerUser(); break;
-            case 2: loginUser(events, menus, venues, nextMenuID, nextEventID,nextVenueID); break;
-            case 3:
-                cout << "👋 Goodbye!\n";
-                saveDataToFile(events);
-                saveMenuToFile(menus);
-                saveVenueToFile(venues);
+            case 1:
+                registerUser();
                 break;
+            case 2:
+                loginUser(events, menus, venues, nextMenuID, nextEventID,nextVenueID);
+                break;
+            case 0:
+                cout << "Thank you for using our system. Have a nice day!\n";
+                break;
+            default:
+                cout << "Invalid choice! Please enter a number between 1-3.\n";
         }
-    } while (choice != 3);
+    } while (choice != 0);
 }
 
 int main() {
@@ -1809,8 +2633,8 @@ int main() {
     loadVenueFromFile(venues, nextVenueID);
     loadMenuFromFile(menus, nextMenuID);
     loadDataFromFile(events,nextEventID);
+    loadFeedbacks(events);
 
-    system("CLS");
 
     cout << "=============================================\n";
     cout << "     Wedding Event Management System\n";

@@ -1,2 +1,0 @@
-1001;test;0111111111;2025-11-12;garden;pj;300;4500;Morning (10:00 - 14:00);200;Vintage;None;1;Western;450;Buffet;fish & chips,mushroom soup,steak,salad;;13500;1;Online Banking
-1002;test2;0111222222;2025-12-12;garden;pj;300;4500;Evening (18:00 - 22:00);34;Vintage;None;1;Western;450;Plated;fish & chips,mushroom soup,steak,salad;;6300;1;Online Banking
