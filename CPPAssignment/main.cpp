@@ -9,9 +9,6 @@
 #include <iomanip>
 using namespace std;
 
-const int NUM_TIMESLOTS = 2;
-string timeslots[NUM_TIMESLOTS] = {"Morning", "Evening"};
-
 struct User {
     string username;
     string password;
@@ -264,8 +261,8 @@ void deleteFeedback(const string& username, vector<Event>& events) {
     }else {
         cout << "Invalid choice.\n";
     }
-
 }
+
 void loadFeedbacks(vector<Event>& events) {
     ifstream inFile("feedbacks.txt");
 
@@ -302,6 +299,7 @@ void loadFeedbacks(vector<Event>& events) {
     }
     inFile.close();
 }
+
 void saveFeedbacks(const vector<Event>& events) {
     ofstream fout("feedbacks.txt");
     if (!fout) {
@@ -324,6 +322,7 @@ void saveFeedbacks(const vector<Event>& events) {
 
     fout.close();
 }
+
 void submitFeedback(const string& username, vector<Event>& events) {
     cout << "\n+=================================================+\n";
     cout << "|                 Submit Feedback                 |\n";
@@ -439,8 +438,8 @@ void staffFeedbackMenu(vector<Event>& events) {
         }
 
     } while (choice != 0);
-
 }
+
 void checkEventIssues(const vector<Event>& events) {
 
     cout << "\n+=================================================+\n";
@@ -467,6 +466,7 @@ void checkEventIssues(const vector<Event>& events) {
         cout << "No events with notes or issues found. ";
     }
 }
+
 void viewAllEvents(const vector<Event>& events) {
     if (events.empty()) {
         cout << "No events available. ";
@@ -500,6 +500,7 @@ void viewAllEvents(const vector<Event>& events) {
     }
     cout << "+" << string(135, '=') << "+\n";
 }
+
 bool updateEventStatus(vector<Event>& events) {
     if (events.empty()) {
         cout << "No events available. Press enter to go back...";
@@ -537,7 +538,6 @@ bool updateEventStatus(vector<Event>& events) {
     int id;
     int index = -1;
 
-    // Event ID input loop
     while (true) {
         cout << "\nEnter Event ID to update status (or 0 to cancel): ";
         if (cin >> id) {
@@ -585,7 +585,7 @@ bool updateEventStatus(vector<Event>& events) {
     }
 
     cout << "Event status updated to: " << events[index].evstatus << endl;
-    return true;  // something was updated
+    return true;
 }
 
 bool commentEventIssues(vector<Event>& events) {
@@ -656,7 +656,6 @@ bool commentEventIssues(vector<Event>& events) {
     cout << "Comment updated for Event ID " << id << ".\n";
     return true;
 }
-
 
 void updateFeedbackStatus(vector<Event>& events) {
     string searchType, searchStatus;
@@ -832,6 +831,7 @@ void viewSummarizeFeedback(const vector<Event>& events) {
     cout << "Total Resolved     : " << resolvedAll << endl << "\n";
     cout << "=================================================\n";
 }
+
 void generateEventReport(const vector<Event>& events) {
     cout << "\n+===================================================+\n";
     cout << "|                    Event Report                   |\n";
@@ -891,6 +891,7 @@ void generateEventReport(const vector<Event>& events) {
     cout << left << setw(30) << "Lowest Event Cost (RM):" << right << setw(22) << minCost << "\n";
     cout << "+===================================================+\n";
 }
+
 void generateMonthlyEventReport(const vector<Event>& events) {
     cout << "\n+================================================+\n";
     cout << "|               Monthly Event Report             |\n";
@@ -1155,7 +1156,6 @@ void reportMenu(const vector<Event>& events) {
     } while (choice != 0);
 }
 
-
 void userMenu(const string& username,const string& phone, vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextEventID) {
     int choice;
     do {
@@ -1199,6 +1199,7 @@ void userMenu(const string& username,const string& phone, vector<Event>& events,
         }
     } while (choice != 0);
 }
+
 void adminMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextVenueID) {
     int choice;
     do {
@@ -1517,6 +1518,7 @@ double calculateTotalCost(const Event &e) {
     double menuCost = (e.menu.id != 0) ? (e.menu.price * tables) : 0.0;
     return e.venue.price + menuCost;
 }
+
 // Save all events to file
 void saveDataToFile(const vector<Event>& events) {
     ofstream file("data.txt");
@@ -1568,6 +1570,7 @@ void saveDataToFile(const vector<Event>& events) {
     file.close();
     cout << "Events saved successfully.\n";
 }
+
 // Load all events from file
 void loadDataFromFile(vector<Event>& events,int& nextEventI) {
     ifstream file("data.txt");
@@ -2755,7 +2758,6 @@ void mainMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues,
         }
     } while (choice != 0);
 }
-
 
 int main() {
     vector<Event> events;
