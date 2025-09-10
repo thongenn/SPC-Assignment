@@ -158,6 +158,8 @@ void userFeedbackMenu(const string& username, vector<Event>& events) {
                 break;
             case 2:
                 viewFeedback(username, events);
+                cout << "Press enter to back to feedback menu...";
+                cin.get();
                 break;
             case 3:
                 deleteFeedback(username, events);
@@ -2000,7 +2002,6 @@ void registerEvent(const string& username,const string& phone, vector<Event>& ev
 
 void createMenu(vector<Menu>& menus, int& nextMenuID) {
     Menu m;
-    m.id = nextMenuID++;
 
     // Cuisine choice (with cancel option)
     int opt;
@@ -2090,6 +2091,7 @@ void createMenu(vector<Menu>& menus, int& nextMenuID) {
     }
 
     if (confirm == 'y' || confirm == 'Y') {
+        m.id = nextMenuID++;
         menus.push_back(m);
         saveMenuToFile(menus);
         cout << "\nMenu created successfully!\n";
@@ -2459,7 +2461,6 @@ void printReceipt(const string &username, const vector<Event> &events) {
 
 void createVenue(vector<Venue>& venues,int& nextVenueID) {
     Venue v;
-    v.id = nextVenueID++;
     cout << "\n=== Create Venue ===\n";
 
     while (true) {
@@ -2467,8 +2468,11 @@ void createVenue(vector<Venue>& venues,int& nextVenueID) {
         getline(cin, v.type);
         trim(v.type);
         if (v.type == "0") return;
-        if (!v.type.empty()) break;
-        cout << "Venue type cannot be empty! Please try again.\n";
+
+        regex stringOnlyRegex(".*[A-Za-z].*");
+        if (regex_match(v.type, stringOnlyRegex)) break;
+
+        cout << "Venue type can only be letters ! Please try again.\n";
     }
 
     // Location validation
@@ -2476,8 +2480,11 @@ void createVenue(vector<Venue>& venues,int& nextVenueID) {
         cout << "Enter location: ";
         getline(cin, v.location);
         trim(v.location);
-        if (!v.location.empty()) break;
-        cout << "Location cannot be empty! Please try again.\n";
+
+        regex notNumberOnlyRegex(".*[A-Za-z].*"); // must contain at least one letter
+        if (!v.location.empty() && regex_match(v.location, notNumberOnlyRegex)) break;
+
+        cout << "Location cannot be empty or numbers-only! Please try again.\n";
     }
 
     // Capacity validation
@@ -2541,6 +2548,7 @@ void createVenue(vector<Venue>& venues,int& nextVenueID) {
     }
 
     if (confirm == 'y' || confirm == 'Y') {
+        v.id = nextVenueID++;
         venues.push_back(v);
         saveVenueToFile(venues);
         cout << "\nVenue created successfully!\n";
@@ -2558,7 +2566,7 @@ void createVenue(vector<Venue>& venues,int& nextVenueID) {
 void viewVenues(const vector<Venue>& venues) {
     cout << "\n========================================\n";
     cout << "         List of Available Venues       \n";
-    cout << "========================================\n";
+    cout << "========================================\n\n";
 
     if (venues.empty()) {
         cout << "No venues available.\n";
@@ -2567,22 +2575,22 @@ void viewVenues(const vector<Venue>& venues) {
 
     cout << left << setw(8)  << "ID"
          << setw(20) << "Type"
-         << setw(20) << "Location"
+         << setw(30) << "Location"
          << setw(15) << "Capacity"
          << setw(15) << "Price (RM)" << "\n";
 
-    cout << string(70, '=') << "\n";
+    cout << string(100, '=') << "\n";
 
     for (const auto& v : venues) {
         cout << left << setw(8)  << v.id
              << setw(20) << v.type
-             << setw(20) << v.location
+             << setw(30) << v.location
              << setw(15) << v.capacity
              << setw(15) << fixed << setprecision(2) << v.price
              << "\n";
     }
 
-    cout << string(70, '=') << "\n";
+    cout << string(100, '=') << "\n";
 }
 
 void mainMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextEventID,int& nextVenueID) {
