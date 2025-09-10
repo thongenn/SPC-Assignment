@@ -119,8 +119,8 @@ void viewSummarizeFeedback(const vector<Event>& events);
 void viewAllEvents(const vector<Event>& events);
 void generateEventReport(const vector<Event>& events);
 void generateMonthlyEventReport (const vector<Event>& events);
-void updateEventStatus(vector<Event>& events);
-void commentEventIssues(vector<Event>& events);
+bool updateEventStatus(vector<Event>& events);
+bool commentEventIssues(vector<Event>& events);
 void checkEventIssues(const vector<Event>& events);
 // both
 void saveFeedbacks(const vector<Event>& events);
@@ -470,10 +470,14 @@ void checkEventIssues(const vector<Event>& events) {
     }
 
     if (!found) {
-        cout << "No events with notes or issues found.\n";
+        cout << "No events with notes or issues found. ";
     }
 }
 void viewAllEvents(const vector<Event>& events) {
+    if (events.empty()) {
+        cout << "No events available. ";
+        return;
+    }
 
     cout << "\n+" << string(135, '=') << "+\n";
     cout << "| " << setw(6) << left << "ID"
@@ -502,86 +506,152 @@ void viewAllEvents(const vector<Event>& events) {
     }
     cout << "+" << string(135, '=') << "+\n";
 }
-void updateEventStatus(vector<Event>& events) {
+bool updateEventStatus(vector<Event>& events) {
     if (events.empty()) {
-        cout << "No events available.\n";
-        return;
+        cout << "No events available. Press enter to go back...";
+        cin.get();
+        return false;
     }
+
+    cout << "\n+" << string(135, '=') << "+\n";
+    cout << "| " << setw(6) << left << "ID"
+         << " | " << setw(12) << left << "Customer"
+         << " | " << setw(15) << left << "Event Date"
+         << " | " << setw(13) << left << "Venue"
+         << " | " << setw(15) << left << "Location"
+         << " | " << setw(12) << left << "Guest"
+         << " | " << setw(13) << left << "Theme"
+         << " | " << setw(12) << left << "Status"
+         << " | " << setw(10) << right << "Total (RM)"
+         << " |\n";
+    cout << "+" << string(135, '=') << "+\n";
+
+    for (const Event& e : events) {
+        cout << "| " << setw(6) << left << e.id
+             << " | " << setw(12) << left << e.customer
+             << " | " << setw(15) << left << dateToString(e.date)
+             << " | " << setw(13) << left << e.venue.type
+             << " | " << setw(15) << left << e.venue.location
+             << " | " << setw(12) << left << e.guestCount
+             << " | " << setw(  13) << left << e.theme
+             << " | " << setw(12) << left << e.evstatus
+             << " | " << setw(10) << right << fixed << setprecision(2) << e.totalCost
+             << " |\n";
+    }
+    cout << "+" << string(135, '=') << "+\n";
 
     int id;
-    cout << "\nEnter Event ID to update status (or 0 to cancel): ";
-    cin >> id;
-    cin.ignore();
-
-    if (id == 0) {
-        cout << "Cancelled.\n";
-        return;
-    }
-
     int index = -1;
-    for (int i = 0; i < events.size(); i++) {
-        if (events[i].id == id) {
-            index = i;
-            break;
+
+    // Event ID input loop
+    while (true) {
+        cout << "\nEnter Event ID to update status (or 0 to cancel): ";
+        if (cin >> id) {
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            if (id == 0) return false;
+
+            for (int i = 0; i < events.size(); i++) {
+                if (events[i].id == id) {
+                    index = i;
+                    break;
+                }
+            }
+
+            if (index != -1) break;
+            cout << "Event ID not found. Please try again.\n";
+
+        } else {
+            cout << "Invalid input! Please enter a number.\n";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
         }
     }
 
-    if (index == -1) {
-        cout << "Event ID not found.\n";
-        return;
-    }
-
-    cout << "Select new status:\n";
-    cout << "1. Started\n";
-    cout << "2. Postponed\n";
-    cout << "3. Ended\n";
-    cout << "4. Canceled\n";
-    cout << "Choice: ";
     int st;
-    cin >> st;
-    cin.ignore();
-
-    if (st == 1) {
-        events[index].evstatus = "Started";
-    } else if (st == 2) {
-        events[index].evstatus = "Postponed";
-    } else if (st == 3) {
-        events[index].evstatus = "Ended";
-    } else if (st == 4) {
-        events[index].evstatus = "Canceled";
-    } else {
-        cout << "Invalid option.\n";
-        return;
-    }
-    cout << "Event status updated to: " << events[index].evstatus << endl;
-}
-void commentEventIssues(vector<Event>& events) {
-    if (events.empty()) {
-        cout << "No events available.\n";
-        return;
-    }
-
-    int id;
-    cout << "\nEnter Event ID to comment on issues (or 0 to cancel): ";
-    cin >> id;
-    cin.ignore();
-
-    if (id == 0) {
-        cout << "Cancelled.\n";
-        return;
-    }
-
-    int index = -1;
-    for (int i = 0; i < events.size(); i++) {
-        if (events[i].id == id) {
-            index = i;
-            break;
+    while (true) {
+        cout << "Select new status:\n";
+        cout << "1. Started\n2. Postponed\n3. Ended\n4. Canceled\n";
+        cout << "Choice: ";
+        if (cin >> st) {
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            if (st >= 1 && st <= 4) break;
+            cout << "Invalid option! Please enter 1-4.\n";
+        } else {
+            cout << "Invalid input! Please enter a number.\n";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
         }
     }
 
-    if (index == -1) {
-        cout << "Event ID not found.\n";
-        return;
+    switch (st) {
+        case 1: events[index].evstatus = "Started"; break;
+        case 2: events[index].evstatus = "Postponed"; break;
+        case 3: events[index].evstatus = "Ended"; break;
+        case 4: events[index].evstatus = "Canceled"; break;
+    }
+
+    cout << "Event status updated to: " << events[index].evstatus << endl;
+    return true;  // something was updated
+}
+
+bool commentEventIssues(vector<Event>& events) {
+    if (events.empty()) {
+        cout << "No events available. Press enter to go back...";
+        cin.get();
+        return false;
+    }
+
+    cout << "\n+" << string(135, '=') << "+\n";
+    cout << "| " << setw(6) << left << "ID"
+         << " | " << setw(12) << left << "Customer"
+         << " | " << setw(15) << left << "Event Date"
+         << " | " << setw(13) << left << "Venue"
+         << " | " << setw(15) << left << "Location"
+         << " | " << setw(12) << left << "Guest"
+         << " | " << setw(13) << left << "Theme"
+         << " | " << setw(12) << left << "Status"
+         << " | " << setw(10) << right << "Total (RM)"
+         << " |\n";
+    cout << "+" << string(135, '=') << "+\n";
+
+    for (const Event& e : events) {
+        cout << "| " << setw(6) << left << e.id
+             << " | " << setw(12) << left << e.customer
+             << " | " << setw(15) << left << dateToString(e.date)
+             << " | " << setw(13) << left << e.venue.type
+             << " | " << setw(15) << left << e.venue.location
+             << " | " << setw(12) << left << e.guestCount
+             << " | " << setw(  13) << left << e.theme
+             << " | " << setw(12) << left << e.evstatus
+             << " | " << setw(10) << right << fixed << setprecision(2) << e.totalCost
+             << " |\n";
+    }
+    cout << "+" << string(135, '=') << "+\n";
+
+
+    int id;
+    int index = -1;
+
+    while (true) {
+        cout << "\nEnter Event ID to comment on issues (or 0 to cancel): ";
+        if (cin >> id) {
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            if (id == 0) return false;
+
+            for (int i = 0; i < events.size(); i++) {
+                if (events[i].id == id) {
+                    index = i;
+                    break;
+                }
+            }
+
+            if (index != -1) break;
+            cout << "Event ID not found. Please try again.\n";
+        } else {
+            cout << "Invalid input! Please enter a number.\n";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        }
     }
 
     cout << "Enter comment on technical issues/problems: ";
@@ -590,7 +660,10 @@ void commentEventIssues(vector<Event>& events) {
 
     events[index].issues = comment;
     cout << "Comment updated for Event ID " << id << ".\n";
+    return true;
 }
+
+
 void updateFeedbackStatus(vector<Event>& events) {
     string searchType, searchStatus;
 
@@ -1002,17 +1075,19 @@ void eventMenu(vector<Event>& events) {
         switch (choice) {
             case 1:
                 viewAllEvents(events);
+                cout << "Press enter to go back....";
+                cin.get();
                 break;
             case 2:
-                updateEventStatus(events);
-                saveDataToFile(events);
+                if (updateEventStatus(events))saveDataToFile(events);
                 break;
             case 3:
-                commentEventIssues(events);
-                saveDataToFile(events);
+                if (commentEventIssues(events))saveDataToFile(events);
                 break;
             case 4:
                 checkEventIssues(events);
+                cout << "Press enter to go back...";
+                cin.get();
                 break;
             case 0:
                 break;
@@ -1046,9 +1121,13 @@ void reportMenu(const vector<Event>& events) {
         switch (choice) {
             case 1:
                 generateEventReport(events);
+                cout << "Press enter to go back...";
+                cin.get();
                 break;
             case 2:
                 generateMonthlyEventReport(events);
+                cout << "Press enter to go back...";
+                cin.get();
                 break;
             case 0:
                 break;
