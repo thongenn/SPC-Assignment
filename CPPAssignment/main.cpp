@@ -138,19 +138,23 @@ void userFeedbackMenu(const string& username, vector<Event>& events) {
         cout << "| 0. Back to Main Menu                            |\n";
         cout << "+=================================================+\n";
 
+        // Input validation loop
         while (true) {
             cout << "Enter your choice: ";
             if (cin >> choice) {
                 if (choice >= 0 && choice <= 3) {
-                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                    break;
-                }else {
-                    cout << "Invalid input! Please enter a number.\n";
-                    cin.clear();
-                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n'); // clear buffer
+                    break; // valid choice
+                } else {
+                    cout << "Invalid choice! Please enter a number between 0-3.\n";
                 }
+            } else {
+                cout << "Invalid input! Please enter a number.\n";
+                cin.clear(); // clear fail state
             }
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // discard invalid input
         }
+
         switch (choice) {
             case 1:
                 submitFeedback(username, events);
@@ -167,13 +171,11 @@ void userFeedbackMenu(const string& username, vector<Event>& events) {
                 break;
             case 0:
                 return;
-            default:
-                cout << "Invalid choice. Try again.\n";
         }
 
     } while (choice != 0);
-
 }
+
 void viewFeedback(const string& username, const vector<Event>& events) {
 
     cout << "\n+=================================================+\n";
@@ -242,7 +244,8 @@ void deleteFeedback(const string& username, vector<Event>& events) {
     }
 
     if (!hasFeedback) {
-        cout << "You have no feedback to delete.\n";
+        cout << "You have no feedback to delete. Press enter to go back...";
+        cin.get();
         return;
     }
 
@@ -345,7 +348,8 @@ void submitFeedback(const string& username, vector<Event>& events) {
     }
 
     if (!userEvent) {
-        cout << "No events found for your account.\n";
+        cout << "No events found for your account. Press enter to go back...";
+        cin.get();
         return;
     }
 
@@ -989,11 +993,13 @@ void venueMenu(vector<Venue>& venues, int& nextVenueID) {
                     cin.ignore(numeric_limits<streamsize>::max(), '\n');
                     break;
                 } else {
-                    cout << "Invalid input! Please enter a number.\n";
-                    cin.clear();
-                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    cout << "Invalid choice! Please enter a number between 0-2.\n";
                 }
+            } else {
+                cout << "Invalid input! Please enter a number.\n";
+                cin.clear();
             }
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
         }
 
         switch (choice) {
@@ -1007,11 +1013,10 @@ void venueMenu(vector<Venue>& venues, int& nextVenueID) {
                 break;
             case 0:
                 break;
-            default:
-                cout << "Invalid choice.\n";
         }
     } while (choice != 0);
 }
+
 void menuMenu(vector<Menu>& menus, int& nextMenuID) {
     int choice;
     do {
@@ -1019,18 +1024,21 @@ void menuMenu(vector<Menu>& menus, int& nextMenuID) {
         cout << "1. Create Menu\n";
         cout << "2. View Menus\n";
         cout << "0. Back\n";
+
         while (true) {
             cout << "Enter your choice: ";
             if (cin >> choice) {
                 if (choice >= 0 && choice <= 2) {
                     cin.ignore(numeric_limits<streamsize>::max(), '\n');
                     break;
-                }else {
-                    cout << "Invalid input! Please enter a number.\n";
-                    cin.clear();
-                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                } else {
+                    cout << "Invalid choice! Please enter a number between 0-2.\n";
                 }
+            } else {
+                cout << "Invalid input! Please enter a number.\n";
+                cin.clear();
             }
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // discard invalid input
         }
 
         switch (choice) {
@@ -1044,11 +1052,10 @@ void menuMenu(vector<Menu>& menus, int& nextMenuID) {
                 break;
             case 0:
                 break;
-            default:
-                cout << "Invalid choice.\n";
         }
     } while (choice != 0);
 }
+
 void eventMenu(vector<Event>& events) {
     int choice;
     do {
@@ -1059,30 +1066,36 @@ void eventMenu(vector<Event>& events) {
         cout << "4. View Event Notes or Issues\n";
         cout << "0. Back\n";
 
+        // Input validation loop
         while (true) {
             cout << "Enter your choice: ";
             if (cin >> choice) {
                 if (choice >= 0 && choice <= 4) {
-                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                    break;
-                }else {
-                    cout << "Invalid input! Please enter a number.\n";
-                    cin.clear();
-                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n'); // clear buffer
+                    break; // valid choice
+                } else {
+                    cout << "Invalid choice! Please enter a number between 0-4.\n";
                 }
+            } else {
+                cout << "Invalid input! Please enter a number.\n";
+                cin.clear(); // clear fail state
             }
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // discard invalid input
         }
+
         switch (choice) {
             case 1:
                 viewAllEvents(events);
-                cout << "Press enter to go back....";
+                cout << "Press enter to go back...";
                 cin.get();
                 break;
             case 2:
-                if (updateEventStatus(events))saveDataToFile(events);
+                if (updateEventStatus(events))
+                    saveDataToFile(events);
                 break;
             case 3:
-                if (commentEventIssues(events))saveDataToFile(events);
+                if (commentEventIssues(events))
+                    saveDataToFile(events);
                 break;
             case 4:
                 checkEventIssues(events);
@@ -1091,11 +1104,10 @@ void eventMenu(vector<Event>& events) {
                 break;
             case 0:
                 break;
-            default:
-                cout << "Invalid choice.\n";
         }
     } while (choice != 0);
 }
+
 void reportMenu(const vector<Event>& events) {
     int choice;
     do {
@@ -1110,12 +1122,14 @@ void reportMenu(const vector<Event>& events) {
                 if (choice >= 0 && choice <= 2) {
                     cin.ignore(numeric_limits<streamsize>::max(), '\n');
                     break;
-                }else {
-                    cout << "Invalid input! Please enter a number.\n";
-                    cin.clear();
-                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                } else {
+                    cout << "Invalid choice! Please enter a number between 0-2.\n";
                 }
+            } else {
+                cout << "Invalid input! Please enter a number.\n";
+                cin.clear();
             }
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
         }
 
         switch (choice) {
@@ -1131,8 +1145,6 @@ void reportMenu(const vector<Event>& events) {
                 break;
             case 0:
                 break;
-            default:
-                cout << "Invalid choice.\n";
         }
     } while (choice != 0);
 }
@@ -1184,7 +1196,6 @@ void userMenu(const string& username,const string& phone, vector<Event>& events,
 void adminMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextVenueID) {
     int choice;
     do {
-
         cout << "\n===== Organizer Page (Admin) =====\n";
         cout << "1. Venue Management\n";
         cout << "2. Menu Management\n";
@@ -1193,20 +1204,20 @@ void adminMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues
         cout << "5. Reports\n";
         cout << "0. Logout\n";
 
-        //input validation
         while (true) {
             cout << "Enter your choice: ";
             if (cin >> choice) {
                 if (choice >= 0 && choice <= 5) {
                     cin.ignore(numeric_limits<streamsize>::max(), '\n');
                     break;
+                } else {
+                    cout << "Invalid choice! Please enter a number between 0-5.\n";
                 }
-                else {
-                    cout << "Invalid input! Please enter a number.\n";
-                    cin.clear();
-                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            } else {
+                cout << "Invalid input! Please enter a number.\n";
+                cin.clear();
             }
-            }
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
         }
 
         switch (choice) {
@@ -1228,11 +1239,10 @@ void adminMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues
             case 0:
                 cout << "Logging out...\n";
                 break;
-            default:
-                cout << "Invalid input! Please enter a number between 1 - 6.\n";
         }
     } while (choice != 0);
 }
+
 void registerUser() {
     User newUser;
     cout << "---- Register New User (Enter 0 to go back) ----\n";
@@ -1788,6 +1798,8 @@ void registerEvent(const string& username,const string& phone, vector<Event>& ev
 
     if (venues.empty()) {
         cout << "No venues available! Please contact admin to create venues first.\n";
+        cout << "Press enter to go back...";
+        cin.get();
         return;
     }
 
@@ -2489,18 +2501,13 @@ void printReceipt(const string &username, const vector<Event> &events) {
     }
 
     if (!userEvent) {
-        cout << "No event found for this user.\n";
+        cout << "You haven't register an event yet ! Press enter to go back";
+        cin.get();
         return;
     }
 
     const Event &e = *userEvent;
 
-    if (!e.isPaid) {
-        cout << "No receipt available. Please complete your payment first.\n";
-        cout << "Press enter to back to user page....";
-        cin.get();
-        return;
-    }
 
     // Print receipt only if paid
     cout << "\n=============================================\n";
@@ -2686,13 +2693,14 @@ void mainMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues,
                 if (choice >= 0 && choice <= 2) {
                     cin.ignore(numeric_limits<streamsize>::max(), '\n');
                     break;
+                } else {
+                    cout << "Invalid choice! Please enter a number between 0-2.\n";
                 }
-                else {
-                    cout << "Invalid input! Please enter a number.\n";
-                    cin.clear();
-                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            } else {
+                cout << "Invalid input! Please enter a number.\n";
+                cin.clear();
             }
-            }
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
         }
 
         switch (choice) {
@@ -2700,16 +2708,15 @@ void mainMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues,
                 registerUser();
                 break;
             case 2:
-                loginUser(events, menus, venues, nextMenuID, nextEventID,nextVenueID);
+                loginUser(events, menus, venues, nextMenuID, nextEventID, nextVenueID);
                 break;
             case 0:
                 cout << "Thank you for using our system. Have a nice day!\n";
                 break;
-            default:
-                cout << "Invalid choice! Please enter a number between 1-3.\n";
         }
     } while (choice != 0);
 }
+
 
 int main() {
     vector<Event> events;
