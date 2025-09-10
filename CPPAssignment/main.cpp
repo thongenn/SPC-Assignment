@@ -910,14 +910,30 @@ void generateMonthlyEventReport(const vector<Event>& events) {
         cout << "No events available.\n";
         return;
     }
-
     int month, year;
-    cout << "Enter month (1-12): ";
-    cin >> month;
-    cout << "Enter year: ";
-    cin >> year;
-    cin.ignore();
+    while (true) {
+        cout << "Enter month (1-12): ";
+        if (cin >> month && month >= 1 && month <= 12) {
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // clear buffer
+            break;
+        } else {
+            cout << "Invalid input! Please enter a number between 1 and 12.\n";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // discard invalid input
+        }
+    }
 
+    while (true) {
+        cout << "Enter year: ";
+        if (cin >> year && year > 0) {
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // clear buffer
+            break;
+        } else {
+            cout << "Invalid input! Please enter a valid year.\n";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // discard invalid input
+        }
+    }
     int totalEvents = 0;
     int started = 0, postponed = 0, ended = 0, canceled = 0;
     double totalRevenue = 0.0;
