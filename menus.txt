@@ -1,1 +1,2 @@
-1;Western;409;salad;spaghetti;cake;gelato
+1;Chinese;467;fish;rice;vege;pork
+2;Western;560;spaghetti;salad;steak;fish & chips
