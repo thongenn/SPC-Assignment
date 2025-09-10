@@ -1,2 +1,3 @@
-1001;test;0111111111;2025-11-12;garden;taman botanica;600;56000;Evening (18:00 - 22:00);90;Natural;None;Canceled;N/A;1;Western;409;Buffet;salad,spaghetti,cake,gelato;;59681;1;Card
-1002;test2;0133333333;2025-11-11;garden;taman botanica;600;56000;Evening (18:00 - 22:00);400;Malay Traditional;None;Canceled;N/A;1;Western;409;Buffet;salad,spaghetti,cake,gelato;;72360;1;Card
+1001;test;0111111111;2025-11-11;garden;taman botanica;600;56000;Morning (10:00 - 14:00);345;Chinese Traditional;None;Canceled;N/A;1;Western;409;Buffet;salad,spaghetti,cake,gelato;;70315;1;Card
+1002;test;0111111111;2025-11-15;garden;taman botanica;600;56000;Morning (10:00 - 14:00);309;Malay Traditional;None;Confirmed;N/A;1;Western;409;Buffet;salad,spaghetti,cake,gelato;;68679;1;Tng eWallet
+1003;test2;0133333333;2025-11-15;garden;taman botanica;600;56000;Evening (18:00 - 22:00);122;Indian Traditional;None;Confirmed;N/A;1;Western;409;Buffet;salad,spaghetti,cake,gelato;;61317;1;Tng eWallet

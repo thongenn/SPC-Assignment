@@ -9,13 +9,15 @@
 #include <iomanip>
 using namespace std;
 
+const int NUM_TIMESLOTS = 2;
+string timeslots[NUM_TIMESLOTS] = {"Morning", "Evening"};
+
 struct User {
     string username;
     string password;
     string phone;
 };
 
-// Event-related structures and functions
 struct Date {
     int day;
     int month;
@@ -65,16 +67,11 @@ struct Event {
     bool isPaid = false;
     string paymentMethod;
     vector<Feedback> feedbackList;
-
 };
 
-
-// Forward declarations
-//user function
 void registerUser();
 void loginUser(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextEventID,int& nextVenueID);
 void userMenu(const string& username,const string& phone, vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextEventID);
-//admin function
 void adminMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextVenueID);
 void mainMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues, int& nextMenuID,int& nextEventID,int& nextVenueID);
 bool validatePhone(const string& phone);
@@ -108,12 +105,9 @@ void venueMenu(vector<Venue>& venues, int& nextVenueID);
 void reportMenu(const vector<Event>& events);
 void userFeedbackMenu(const string& username, vector<Event>& events);
 void staffFeedbackMenu(vector<Event>& events);
-// WQ
-// user
 void submitFeedback(const string& username, vector<Event>& events);
 void deleteFeedback(const string& username, vector<Event>& events);
 void viewFeedback(const string& username, const vector<Event>& events);
-// admin
 void updateFeedbackStatus(vector<Event>& events);
 void viewAllFeedback(const vector<Event>& events);
 void viewSummarizeFeedback(const vector<Event>& events);
@@ -123,7 +117,6 @@ void generateMonthlyEventReport (const vector<Event>& events);
 bool updateEventStatus(vector<Event>& events);
 bool commentEventIssues(vector<Event>& events);
 void checkEventIssues(const vector<Event>& events);
-// both
 void saveFeedbacks(const vector<Event>& events);
 void loadFeedbacks(vector<Event>& events);
 
@@ -275,10 +268,6 @@ void deleteFeedback(const string& username, vector<Event>& events) {
 }
 void loadFeedbacks(vector<Event>& events) {
     ifstream inFile("feedbacks.txt");
-    //if (!inFile) {
-    //    cout << "No feedbacks file found. Starting fresh.\n";
-    //return;
-    //}
 
     string line;
     while (getline(inFile, line)) {
@@ -1816,7 +1805,6 @@ void registerEvent(const string& username,const string& phone, vector<Event>& ev
     }
 
     Event e;
-    e.id = nextEventID++;
     e.customer = username;
     e.phone = phone;
 
@@ -2096,6 +2084,7 @@ void registerEvent(const string& username,const string& phone, vector<Event>& ev
     }
 
     if (confirm == 'y' || confirm == 'Y') {
+        e.id = nextEventID++;
         int nextMenuID = 0;
         if (!customizeMenu(e, events, const_cast<vector<Menu>&>(menus), nextMenuID)) {
             cout << "Customization cancelled. Event not saved.\n";
@@ -2532,7 +2521,6 @@ void printReceipt(const string &username, const vector<Event> &events) {
     for (const auto &e : events) {
         if (e.customer == username) {
             userEvent = &e;
-            break;
         }
     }
 

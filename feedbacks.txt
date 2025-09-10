@@ -1,0 +1,3 @@
+1001|FB00001|Complaint|0|no good|Pending|
+1002|FB00001|Rating|5|good|Pending|
+1003|FB00001|Suggestion|0|improve your program|Pending|
