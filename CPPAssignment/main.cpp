@@ -93,6 +93,7 @@ void loadMenuFromFile(vector<Menu>& menus, int& nextMenuID);
 void saveVenueToFile(const vector<Venue>& venues);
 void loadVenueFromFile(vector<Venue>& venues,int& nextVenueID);
 void registerEvent(const string& username,const string& phone,vector<Event>& events, vector<Menu>& menus, const vector<Venue>& venues,int& nextEventID);
+bool alreadyHasEvent(const string& username, const vector<Event>& events);
 void createMenu(vector<Menu>& menus, int& nextMenuID);
 void viewMenus(const vector<Menu>& menus);
 bool customizeMenu(Event& e, vector<Event>& events, vector<Menu>& menus, int& nextMenuID);
@@ -1805,6 +1806,15 @@ void loadVenueFromFile(vector<Venue>& venues, int& nextVenueID) {
 }
 
 void registerEvent(const string& username,const string& phone, vector<Event>& events,vector<Menu>& menus, const vector<Venue>& venues,int& nextEventID) {
+
+    if (alreadyHasEvent(username, events)) {
+        cout << "You already have an active wedding event registered. "
+             << "You may contact admin to cancel your existing event before booking a new one.\n";
+        cout << "Press enter to go back...";
+        cin.get();
+        return;
+    }
+
     Event e;
     e.id = nextEventID++;
     e.customer = username;
@@ -2106,6 +2116,16 @@ void registerEvent(const string& username,const string& phone, vector<Event>& ev
         cout << "Event registration cancelled.\n";
     }
 }
+
+bool alreadyHasEvent(const string& username, const vector<Event>& events) {
+    for (const auto& ev : events) {
+        if (ev.customer == username && ev.evstatus != "Canceled" && ev.evstatus != "Ended") {
+            return true;
+        }
+    }
+    return false;
+}
+
 
 void createMenu(vector<Menu>& menus, int& nextMenuID) {
     Menu m;
@@ -2524,6 +2544,13 @@ void printReceipt(const string &username, const vector<Event> &events) {
 
     const Event &e = *userEvent;
 
+    if (e.evstatus == "Canceled") {
+        cout << "Your event was canceled. No receipt is available.\n";
+        cout << "Press enter to go back...";
+        cin.get();
+        return;
+    }
+
 
     // Print receipt only if paid
     cout << "\n=============================================\n";
@@ -2569,13 +2596,21 @@ void createVenue(vector<Venue>& venues,int& nextVenueID) {
         cout << "Enter venue type (Enter 0 to cancel) : ";
         getline(cin, v.type);
         trim(v.type);
+
         if (v.type == "0") return;
 
-        regex stringOnlyRegex(".*[A-Za-z].*");
-        if (regex_match(v.type, stringOnlyRegex)) break;
+        int letterCount = 0;
+        for (char c : v.type) {
+            if (isalpha(c)) letterCount++;
+        }
 
-        cout << "Venue type can only be letters ! Please try again.\n";
+        if (letterCount >= 4) {
+            break;
+        } else {
+            cout << "Venue type must contain at least 4 letters! Please try again.\n";
+        }
     }
+
 
     // Location validation
     while (true) {
