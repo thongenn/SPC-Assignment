@@ -144,11 +144,11 @@ void userFeedbackMenu(const string& username, vector<Event>& events) {
                 if (choice >= 0 && choice <= 3) {
                     cin.ignore(numeric_limits<streamsize>::max(), '\n');
                     break;
+                }else {
+                    cout << "Invalid input! Please enter a number.\n";
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 }
-            } else {
-                cout << "Invalid input! Please enter a number.\n";
-                cin.clear();
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
             }
         }
         switch (choice) {
@@ -913,11 +913,11 @@ void venueMenu(vector<Venue>& venues, int& nextVenueID) {
                 if (choice >= 0 && choice <= 2) {
                     cin.ignore(numeric_limits<streamsize>::max(), '\n');
                     break;
+                } else {
+                    cout << "Invalid input! Please enter a number.\n";
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 }
-            } else {
-                cout << "Invalid input! Please enter a number.\n";
-                cin.clear();
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
             }
         }
 
@@ -950,11 +950,11 @@ void menuMenu(vector<Menu>& menus, int& nextMenuID) {
                 if (choice >= 0 && choice <= 2) {
                     cin.ignore(numeric_limits<streamsize>::max(), '\n');
                     break;
+                }else {
+                    cout << "Invalid input! Please enter a number.\n";
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 }
-            } else {
-                cout << "Invalid input! Please enter a number.\n";
-                cin.clear();
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
             }
         }
 
@@ -990,11 +990,11 @@ void eventMenu(vector<Event>& events) {
                 if (choice >= 0 && choice <= 4) {
                     cin.ignore(numeric_limits<streamsize>::max(), '\n');
                     break;
+                }else {
+                    cout << "Invalid input! Please enter a number.\n";
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 }
-            } else {
-                cout << "Invalid input! Please enter a number.\n";
-                cin.clear();
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
             }
         }
         switch (choice) {
@@ -1033,11 +1033,11 @@ void reportMenu(const vector<Event>& events) {
                 if (choice >= 0 && choice <= 2) {
                     cin.ignore(numeric_limits<streamsize>::max(), '\n');
                     break;
+                }else {
+                    cout << "Invalid input! Please enter a number.\n";
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 }
-            } else {
-                cout << "Invalid input! Please enter a number.\n";
-                cin.clear();
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
             }
         }
 
@@ -1095,7 +1095,7 @@ void userMenu(const string& username,const string& phone, vector<Event>& events,
                 cout << "Logging out...\n";
                 break;
             default:
-                cout << "Invalid choice! Please enter a number between 1-5.\n";
+                cout << "Invalid choice! Please enter a number between 1-3.\n";
 
         }
     } while (choice != 0);
@@ -1120,10 +1120,11 @@ void adminMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues
                     cin.ignore(numeric_limits<streamsize>::max(), '\n');
                     break;
                 }
-            } else {
-                cout << "Invalid input! Please enter a number.\n";
-                cin.clear();
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                else {
+                    cout << "Invalid input! Please enter a number.\n";
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            }
             }
         }
 
@@ -2599,10 +2600,11 @@ void mainMenu(vector<Event>& events, vector<Menu>& menus, vector<Venue>& venues,
                     cin.ignore(numeric_limits<streamsize>::max(), '\n');
                     break;
                 }
-            } else {
-                cout << "Invalid input! Please enter a number.\n";
-                cin.clear();
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                else {
+                    cout << "Invalid input! Please enter a number.\n";
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            }
             }
         }
 
